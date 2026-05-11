@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Session Feedback Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:#0d1b2a; --navy2:#1b2d42; --navy3:#243447;
+    --teal:#00c9a7; --teal2:#00a88c;
+    --coral:#ff6b6b; --amber:#ffc145;
+    --white:#ffffff; --off:#f4f6f9;
+    --muted:#8a9bb0; --border:#e2e8f0;
+    --text:#1a2332; --text2:#4a5568;
+    --shadow-sm:0 2px 8px rgba(13,27,42,0.07);
+    --radius:14px; --radius-sm:8px;
+  }
+  body { font-family:'DM Sans',sans-serif; background:var(--off); color:var(--text); min-height:100vh; font-size:15px; }
+  .topbar { background:var(--navy); padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:64px; position:sticky; top:0; z-index:100; box-shadow:0 2px 16px rgba(0,0,0,0.18); }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .brand-icon { width:36px; height:36px; background:linear-gradient(135deg,var(--teal),var(--teal2)); border-radius:10px; display:flex; align-items:center; justify-content:center; }
+  .brand-icon svg { width:20px; height:20px; }
+  .brand-name { font-size:17px; font-weight:600; color:#fff; }
+  .brand-name span { color:var(--teal); }
+  .nav-tabs { display:flex; gap:4px; }
+  .nav-tab { padding:8px 20px; border-radius:8px; border:none; background:transparent; color:rgba(255,255,255,0.55); font-size:14px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; display:flex; align-items:center; gap:7px; }
+  .nav-tab svg { width:16px; height:16px; opacity:.7; }
+  .nav-tab:hover { color:#fff; background:rgba(255,255,255,0.08); }
+  .nav-tab.active { background:rgba(0,201,167,0.18); color:var(--teal); }
+  .nav-tab.active svg { opacity:1; }
+  .panel { display:none; }
+  .panel.active { display:block; }
+  #panel-manager.active { display:flex; flex-direction:column; height:calc(100vh - 64px); overflow:hidden; }
+
+  /* EMPLOYEE */
+  .emp-layout { max-width:680px; margin:40px auto; padding:0 20px 80px; }
+  .session-hero { background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%); border-radius:var(--radius); padding:28px 32px; margin-bottom:28px; display:flex; align-items:center; gap:20px; position:relative; overflow:hidden; }
+  .session-hero::before { content:''; position:absolute; right:-40px; top:-40px; width:180px; height:180px; background:radial-gradient(circle,rgba(0,201,167,0.15) 0%,transparent 70%); border-radius:50%; }
+  .hero-icon { width:56px; height:56px; flex-shrink:0; background:rgba(0,201,167,0.15); border:1.5px solid rgba(0,201,167,0.3); border-radius:14px; display:flex; align-items:center; justify-content:center; }
+  .hero-icon svg { width:28px; height:28px; color:var(--teal); }
+  .hero-text h2 { font-family:'DM Serif Display',serif; font-size:22px; color:#fff; margin-bottom:5px; }
+  .hero-text p { font-size:13.5px; color:rgba(255,255,255,0.55); }
+  .hero-badge { margin-left:auto; flex-shrink:0; background:rgba(0,201,167,0.15); border:1px solid rgba(0,201,167,0.25); color:var(--teal); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:500; }
+  .form-card { background:var(--white); border-radius:var(--radius); padding:28px 32px; margin-bottom:18px; box-shadow:var(--shadow-sm); border:1px solid var(--border); }
+  .form-card-title { font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+  .form-card-title svg { width:15px; height:15px; }
+  .field-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .field-group label { display:block; font-size:13px; font-weight:500; color:var(--text2); margin-bottom:7px; }
+  .field-group label .req { color:var(--coral); margin-left:2px; }
+  .field-input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14.5px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--off); transition:border-color .15s,background .15s; outline:none; }
+  .field-input:focus { border-color:var(--teal); background:#fff; }
+  .question-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px 28px; margin-bottom:14px; box-shadow:var(--shadow-sm); transition:border-color .2s; }
+  .question-card.answered { border-color:rgba(0,201,167,0.4); }
+  .q-header { display:flex; align-items:flex-start; gap:14px; margin-bottom:16px; }
+  .q-num { width:28px; height:28px; flex-shrink:0; background:var(--navy); color:#fff; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; margin-top:1px; transition:background .2s; }
+  .question-card.answered .q-num { background:var(--teal); }
+  .q-text { font-size:15.5px; font-weight:500; color:var(--text); line-height:1.5; }
+  .mcq-options { display:flex; flex-wrap:wrap; gap:10px; }
+  .mcq-option { padding:9px 18px; border:1.5px solid var(--border); border-radius:30px; cursor:pointer; font-size:14px; color:var(--text2); background:var(--off); transition:all .18s; user-select:none; font-family:'DM Sans',sans-serif; }
+  .mcq-option:hover { border-color:var(--teal); color:var(--teal); background:rgba(0,201,167,0.05); }
+  .mcq-option.selected { border-color:var(--teal); background:rgba(0,201,167,0.1); color:var(--teal2); font-weight:500; }
+  .rating-wrap { display:flex; gap:8px; }
+  .rating-btn { width:46px; height:46px; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:var(--off); cursor:pointer; font-size:15px; font-weight:600; color:var(--text2); transition:all .18s; font-family:'DM Sans',sans-serif; display:flex; align-items:center; justify-content:center; }
+  .rating-btn:hover { border-color:var(--teal); color:var(--teal); transform:translateY(-2px); }
+  .rating-btn.selected { background:var(--teal); border-color:var(--teal); color:#fff; transform:translateY(-2px); box-shadow:0 4px 12px rgba(0,201,167,0.3); }
+  .rating-labels { display:flex; justify-content:space-between; margin-top:6px; padding:0 2px; }
+  .rating-labels span { font-size:11px; color:var(--muted); }
+  .submit-btn { width:100%; padding:15px; background:linear-gradient(135deg,var(--teal) 0%,var(--teal2) 100%); color:#fff; border:none; border-radius:var(--radius-sm); font-size:16px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 4px 16px rgba(0,201,167,0.35); }
+  .submit-btn:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,201,167,0.45); }
+  .submit-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+  .alert-msg { padding:12px 16px; border-radius:var(--radius-sm); font-size:13.5px; margin-bottom:16px; display:none; align-items:center; gap:10px; }
+  .alert-msg.show { display:flex; }
+  .alert-msg.error { background:#fff5f5; border:1px solid #fed7d7; color:#c53030; }
+  .alert-msg svg { width:16px; height:16px; flex-shrink:0; }
+  .success-screen { text-align:center; padding:60px 40px; background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow-sm); border:1px solid var(--border); }
+  .success-circle { width:80px; height:80px; background:linear-gradient(135deg,var(--teal),var(--teal2)); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; box-shadow:0 8px 24px rgba(0,201,167,0.35); }
+  .success-circle svg { width:36px; height:36px; color:#fff; }
+  .success-screen h2 { font-family:'DM Serif Display',serif; font-size:28px; margin-bottom:10px; }
+  .success-screen p { color:var(--text2); font-size:15px; line-height:1.6; }
+  .sync-badge { display:inline-flex; align-items:center; gap:6px; margin-top:14px; padding:7px 16px; border-radius:20px; font-size:13px; font-weight:500; }
+  .sync-badge.ok { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+  .sync-badge.fail { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
+  .btn-ghost { margin-top:20px; display:inline-flex; align-items:center; gap:8px; padding:11px 24px; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:transparent; color:var(--text2); font-size:14px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+  .btn-ghost:hover { border-color:var(--navy); color:var(--text); }
+
+  /* MANAGER */
+  .mgr-layout { display:grid; grid-template-columns:240px 1fr; height:calc(100vh - 64px); overflow:hidden; }
+  .mgr-sidebar { background:var(--navy); padding:28px 0; height:calc(100vh - 64px); overflow-y:auto; position:relative; }
+  .sidebar-section-label { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:1.2px; color:rgba(255,255,255,0.3); padding:0 20px 10px; }
+  .sidebar-link { display:flex; align-items:center; gap:12px; padding:12px 20px; color:rgba(255,255,255,0.5); cursor:pointer; transition:all .18s; font-size:14px; font-weight:500; border-left:3px solid transparent; }
+  .sidebar-link svg { width:18px; height:18px; flex-shrink:0; }
+  .sidebar-link:hover { color:rgba(255,255,255,0.85); background:rgba(255,255,255,0.05); }
+  .sidebar-link.active { color:var(--teal); border-left-color:var(--teal); background:rgba(0,201,167,0.08); }
+  .sidebar-divider { height:1px; background:rgba(255,255,255,0.07); margin:16px 20px; }
+  .sidebar-user { padding:14px 16px; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.04); margin:20px 16px 0; border-radius:var(--radius-sm); }
+  .sidebar-avatar { width:34px; height:34px; border-radius:50%; background:rgba(0,201,167,0.2); display:flex; align-items:center; justify-content:center; color:var(--teal); font-size:13px; font-weight:600; }
+  .sidebar-user-info p { font-size:13px; color:rgba(255,255,255,0.7); font-weight:500; }
+  .sidebar-user-info span { font-size:11px; color:rgba(255,255,255,0.35); }
+  .logout-btn { margin-left:auto; background:none; border:none; cursor:pointer; color:rgba(255,255,255,0.3); display:flex; align-items:center; padding:4px; border-radius:6px; transition:color .15s; }
+  .logout-btn:hover { color:var(--coral); }
+  .logout-btn svg { width:16px; height:16px; }
+  .mgr-content { padding:36px 40px; background:var(--off); overflow-y:auto; height:calc(100vh - 64px); }
+  .mgr-subtab { display:none; }
+  .mgr-subtab.active { display:block; }
+  .page-header { margin-bottom:28px; }
+  .page-header h1 { font-family:'DM Serif Display',serif; font-size:28px; margin-bottom:5px; }
+  .page-header p { color:var(--text2); font-size:14.5px; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+  .stat-box { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; }
+  .stat-box::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--teal); border-radius:3px 3px 0 0; }
+  .stat-box.coral::after { background:var(--coral); }
+  .stat-box.amber::after { background:var(--amber); }
+  .stat-box.navy::after { background:var(--navy2); }
+  .stat-label { font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:8px; }
+  .stat-value { font-size:30px; font-weight:600; color:var(--text); line-height:1; }
+  .table-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:hidden; margin-bottom:22px; }
+  .table-header { padding:18px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .table-header h3 { font-size:15px; font-weight:600; }
+  .btn-primary { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; background:var(--navy); color:#fff; border:none; border-radius:var(--radius-sm); font-size:13.5px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .18s; }
+  .btn-primary:hover { background:var(--navy2); }
+  .btn-primary svg { width:16px; height:16px; }
+  .btn-teal { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; background:var(--teal); color:#fff; border:none; border-radius:var(--radius-sm); font-size:13.5px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .18s; }
+  .btn-teal:hover { background:var(--teal2); }
+  .btn-outline { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; background:transparent; color:var(--text2); border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .18s; }
+  .btn-outline:hover { border-color:var(--navy); color:var(--text); }
+  .btn-outline svg { width:14px; height:14px; }
+  .btn-danger-sm { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; background:#fff5f5; border:1px solid #fed7d7; border-radius:6px; cursor:pointer; color:var(--coral); transition:all .15s; }
+  .btn-danger-sm:hover { background:var(--coral); color:#fff; border-color:var(--coral); }
+  .btn-danger-sm svg { width:14px; height:14px; }
+  table { width:100%; border-collapse:collapse; }
+  thead tr { background:#f9fafc; }
+  th { padding:11px 20px; text-align:left; font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); border-bottom:1px solid var(--border); }
+  td { padding:14px 20px; font-size:14px; color:var(--text2); border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#fafbfd; }
+  .tag { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:500; white-space:nowrap; }
+  .tag-teal { background:rgba(0,201,167,0.1); color:var(--teal2); }
+  .tag-navy { background:rgba(13,27,42,0.08); color:var(--navy2); }
+  .tag-amber { background:rgba(255,193,69,0.15); color:#a07800; }
+  .q-list-item { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; transition:background .15s; }
+  .q-list-item:hover { background:#fafbfd; }
+  .q-list-item:last-child { border-bottom:none; }
+  .q-idx { width:28px; height:28px; flex-shrink:0; background:var(--navy); color:#fff; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; }
+  .q-list-text { flex:1; }
+  .q-list-text p { font-size:14.5px; font-weight:500; color:var(--text); margin-bottom:3px; }
+  .q-list-text span { font-size:12px; color:var(--muted); }
+  .add-q-form { background:var(--white); border:1.5px solid var(--teal); border-radius:var(--radius); padding:24px; margin-bottom:18px; box-shadow:0 0 0 4px rgba(0,201,167,0.08); display:none; }
+  .add-q-form.open { display:block; }
+  .add-q-form h3 { font-size:15px; font-weight:600; margin-bottom:18px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  .option-input-row { display:flex; gap:8px; margin-bottom:8px; }
+  .option-input-row input { flex:1; }
+  .form-actions { display:flex; gap:10px; margin-top:18px; }
+  .bar-chart-item { margin-bottom:14px; }
+  .bar-label-row { display:flex; justify-content:space-between; margin-bottom:5px; }
+  .bar-label-row span:first-child { font-size:13.5px; font-weight:500; color:var(--text); }
+  .bar-label-row span:last-child { font-size:13px; color:var(--muted); }
+  .bar-track { height:10px; background:var(--off); border-radius:10px; overflow:hidden; }
+  .bar-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--teal2)); border-radius:10px; transition:width .6s ease; }
+  .dept-chip { display:inline-flex; align-items:center; padding:4px 11px; background:rgba(13,27,42,0.07); color:var(--navy2); border-radius:20px; font-size:12px; font-weight:500; }
+  .login-page { flex:1; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg,var(--navy) 0%,#1a3048 60%,var(--off) 100%); overflow-y:auto; }
+  .login-card { background:var(--white); border-radius:20px; padding:44px 48px; width:420px; box-shadow:0 24px 60px rgba(0,0,0,0.2); }
+  .login-logo { width:60px; height:60px; background:var(--navy); border-radius:16px; display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+  .login-logo svg { width:30px; height:30px; }
+  .login-card h2 { font-family:'DM Serif Display',serif; font-size:26px; margin-bottom:6px; }
+  .login-card p { color:var(--text2); font-size:14.5px; margin-bottom:28px; line-height:1.5; }
+  .login-hint { margin-top:16px; text-align:center; font-size:12.5px; color:var(--muted); }
+  .login-hint code { background:var(--off); padding:2px 7px; border-radius:4px; font-family:monospace; }
+  .login-error { display:none; padding:10px 14px; background:#fff5f5; border:1px solid #fed7d7; color:#c53030; border-radius:var(--radius-sm); font-size:13px; margin-bottom:14px; }
+  .login-error.show { display:block; }
+  .setup-step { display:flex; gap:16px; margin-bottom:20px; }
+  .step-num { width:32px; height:32px; flex-shrink:0; background:var(--navy); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; margin-top:2px; }
+  .step-body h4 { font-size:14.5px; font-weight:600; margin-bottom:4px; }
+  .step-body p { font-size:13.5px; color:var(--text2); line-height:1.6; }
+  .step-body a { color:var(--teal2); }
+  .code-block { background:#1a2332; color:#a8d5c2; border-radius:var(--radius-sm); padding:18px 20px; font-family:'Courier New',monospace; font-size:12px; line-height:1.8; overflow-x:auto; white-space:pre; margin-top:12px; }
+  .copy-code-btn { display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:7px 14px; background:transparent; border:1px solid var(--border); border-radius:6px; font-size:12.5px; cursor:pointer; color:var(--text2); font-family:'DM Sans',sans-serif; transition:all .15s; }
+  .copy-code-btn:hover { border-color:var(--navy); color:var(--text); }
+  .copy-code-btn svg { width:13px; height:13px; }
+  .empty-state { text-align:center; padding:60px 30px; color:var(--muted); }
+  .empty-state svg { width:48px; height:48px; margin:0 auto 14px; display:block; opacity:.35; }
+  .empty-state p { font-size:14.5px; }
+  .filter-row { display:flex; gap:10px; flex-wrap:wrap; padding:16px 24px 0; }
+  .filter-row select { padding:8px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--white); outline:none; }
+  .filter-row select:focus { border-color:var(--teal); }
+  .ans-pill { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; background:var(--off); border:1px solid var(--border); font-size:11.5px; color:var(--text2); margin:2px; }
+  .ans-pill b { color:var(--text); margin-left:3px; }
+  .connected-chip { display:none; margin-left:auto; }
+  .connected-chip span { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:20px; font-size:12.5px; font-weight:500; }
+  @media(max-width:768px){
+    .field-row{grid-template-columns:1fr}
+    .stats-row{grid-template-columns:1fr 1fr}
+    .mgr-layout{grid-template-columns:1fr}
+    .mgr-sidebar{position:static;height:auto;display:flex;flex-wrap:wrap;padding:10px;gap:4px}
+    .sidebar-link{padding:8px 12px;border-left:none;border-bottom:2px solid transparent;font-size:13px}
+    .sidebar-link.active{border-bottom-color:var(--teal);border-left-color:transparent}
+    .mgr-content{padding:20px 16px}
+    .topbar{padding:0 16px}
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+    <span class="brand-name">AI Session <span>Feedback Tracker</span></span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchMain('employee')" id="tab-emp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Employee
+    </button>
+    <button class="nav-tab" onclick="switchMain('manager')" id="tab-mgr">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Manager
+    </button>
+  </div>
+</div>
+
+<!-- EMPLOYEE -->
+<div id="panel-employee" class="panel active">
+  <div class="emp-layout">
+    <div class="session-hero">
+      <div class="hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+      <div class="hero-text">
+        <h2 id="session-name-display">AI &amp; Automation Session</h2>
+        <p id="session-meta-display">Share your honest feedback</p>
+      </div>
+      <div class="hero-badge" id="q-count-badge">5 Questions</div>
+    </div>
+    <div id="emp-body">
+      <div class="form-card">
+        <div class="form-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Your Details
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" class="field-input" id="emp-name" placeholder="Enter your full name">
+          </div>
+          <div class="field-group">
+            <label>Department <span class="req">*</span></label>
+            <select class="field-input" id="emp-dept"><option value="">— Select your department —</option></select>
+          </div>
+        </div>
+      </div>
+      <div id="questions-container"></div>
+      <div class="alert-msg error" id="emp-alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="emp-alert-text"></span>
+      </div>
+      <button class="submit-btn" id="submit-btn" onclick="submitFeedback()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Submit Feedback
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MANAGER -->
+<div id="panel-manager" class="panel">
+  <div id="mgr-login" class="login-page">
+    <div class="login-card">
+      <div class="login-logo"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      <h2>Manager Login</h2>
+      <p>Access the dashboard to manage questions, sessions, and view all responses.</p>
+      <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
+      <div class="field-group" style="margin-bottom:16px">
+        <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Password</label>
+        <input type="password" class="field-input" id="mgr-pass" placeholder="Enter manager password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="submit-btn" onclick="doLogin()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="21" y1="12" x2="3" y2="12"/></svg>Login
+      </button>
+      <div class="login-hint">Default password: <code>********</code></div>
+    </div>
+  </div>
+
+  <div id="mgr-dashboard" style="display:none;flex:1;overflow:hidden">
+    <div class="mgr-layout">
+      <div class="mgr-sidebar">
+        <div class="sidebar-section-label">Dashboard</div>
+        <div class="sidebar-link active" onclick="showTab('overview')" id="sl-overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Overview</div>
+        <div class="sidebar-link" onclick="showTab('questions')" id="sl-questions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Questions</div>
+        <div class="sidebar-link" onclick="showTab('responses')" id="sl-responses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Responses</div>
+        <div class="sidebar-link" onclick="showTab('analytics')" id="sl-analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</div>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-section-label">Setup</div>
+        <div class="sidebar-link" onclick="showTab('sessions')" id="sl-sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Sessions</div>
+        <div class="sidebar-link" onclick="showTab('sheets')" id="sl-sheets"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>Google Sheets</div>
+        <div class="sidebar-divider"></div>
+        <div class="sidebar-user">
+          <div class="sidebar-avatar">M</div>
+          <div class="sidebar-user-info"><p>Manager</p><span>Administrator</span></div>
+          <button class="logout-btn" onclick="doLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+        </div>
+      </div>
+
+      <div class="mgr-content">
+        <!-- OVERVIEW -->
+        <div class="mgr-subtab active" id="tab-overview">
+          <div class="page-header"><h1>Overview</h1><p>Feedback summary — <span id="ov-session-name"></span></p></div>
+          <div class="stats-row" id="stats-row"></div>
+          <div class="table-card">
+            <div class="table-header"><h3>Recent Responses</h3><button class="btn-outline" onclick="showTab('responses')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>View All</button></div>
+            <div id="recent-responses-table"></div>
+          </div>
+        </div>
+
+        <!-- QUESTIONS -->
+        <div class="mgr-subtab" id="tab-questions">
+          <div class="page-header"><h1>Questions</h1><p>Manage feedback questions shown to employees</p></div>
+          <div class="add-q-form" id="add-q-form">
+            <h3>Add New Question</h3>
+            <div class="form-grid">
+              <div class="field-group" style="grid-column:1/-1"><label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Question Text</label><input type="text" class="field-input" id="nq-text" placeholder="e.g. How would you rate the session content?"></div>
+              <div class="field-group"><label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Question Type</label><select class="field-input" id="nq-type" onchange="toggleOptions()"><option value="mcq">Multiple Choice (MCQ)</option><option value="rating">Rating (1–5)</option><option value="yesno">Yes / No / Maybe</option><option value="text">Text Field (open-ended)</option></select></div>
+            </div>
+            <div id="options-section">
+              <label style="font-size:13px;font-weight:500;color:var(--text2);display:block;margin-bottom:8px">Answer Options</label>
+              <div id="options-list">
+                <div class="option-input-row"><input type="text" class="field-input" placeholder="Option 1"><button class="btn-danger-sm" onclick="removeOpt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+                <div class="option-input-row"><input type="text" class="field-input" placeholder="Option 2"><button class="btn-danger-sm" onclick="removeOpt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+              </div>
+              <button class="btn-outline" style="margin-top:8px" onclick="addOpt()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Option</button>
+            </div>
+            <div class="form-actions">
+              <button class="btn-teal" onclick="saveQuestion()">Save Question</button>
+              <button class="btn-outline" onclick="document.getElementById('add-q-form').classList.remove('open')">Cancel</button>
+            </div>
+          </div>
+          <div class="table-card">
+            <div class="table-header"><h3>All Questions (<span id="q-count">0</span>)</h3><button class="btn-primary" onclick="document.getElementById('add-q-form').classList.toggle('open')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Question</button></div>
+            <div id="q-list-body"></div>
+          </div>
+        </div>
+
+        <!-- RESPONSES -->
+        <div class="mgr-subtab" id="tab-responses">
+          <div class="page-header"><h1>Responses</h1><p>All employee submissions — filter by department to see full answers</p></div>
+
+          <!-- View toggle + filters -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+            <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--white)">
+              <button id="view-btn-table" onclick="setView('table')" style="padding:8px 18px;border:none;background:var(--navy);color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">
+                List View
+              </button>
+              <button id="view-btn-detail" onclick="setView('detail')" style="padding:8px 18px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">
+                Detail View
+              </button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select id="f-session" onchange="renderResponsesTable()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none"><option value="">All sessions</option></select>
+              <select id="f-dept" onchange="renderResponsesTable()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none"><option value="">All departments</option></select>
+              <button class="btn-outline" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button id="load-btn" class="btn-outline" onclick="loadResponsesFromSheet()" style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>↻ Refresh from Sheet</button><span id="load-msg" style="font-size:13px;color:#166534"></span></div><div id="responses-table"></div>
+        </div>
+
+        <!-- ANALYTICS -->
+        <div class="mgr-subtab" id="tab-analytics">
+          <div class="page-header"><h1>Analytics</h1><p>Visual breakdown of all responses</p></div>
+          <div id="analytics-body"></div>
+        </div>
+
+        <!-- SESSIONS -->
+        <div class="mgr-subtab" id="tab-sessions">
+          <div class="page-header"><h1>Sessions</h1><p>Each session tracks its own responses separately</p></div>
+          <div class="table-card">
+            <div class="table-header"><h3>All Sessions</h3><button class="btn-primary" onclick="addSession()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Session</button></div>
+            <div id="sessions-table"></div>
+          </div>
+        </div>
+
+        <!-- GOOGLE SHEETS -->
+        <div class="mgr-subtab" id="tab-sheets">
+          <div class="page-header"><h1>Google Sheets Integration</h1><p>Sync responses to your "AI Session Feedback Tracker" sheet</p></div>
+          <div class="table-card" style="padding:28px 32px">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px">
+              <div style="width:40px;height:40px;background:#e8f5e9;border-radius:10px;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div><h3 style="font-size:16px;font-weight:600">One-time setup</h3><p style="font-size:13px;color:var(--text2)">Takes about 5 minutes</p></div>
+              <div class="connected-chip" id="connected-chip"><span>✓ Connected</span></div>
+            </div>
+            <div class="setup-step"><div class="step-num">1</div><div class="step-body"><h4>Open your Google Sheet</h4><p>Open <strong>AI Session Feedback Tracker</strong>. Make sure it has two tabs: <strong>Questions</strong> and <strong>Responses</strong>.</p></div></div>
+            <div class="setup-step"><div class="step-num">2</div><div class="step-body"><h4>Open Apps Script &amp; paste code</h4><p>Click <strong>Extensions → Apps Script</strong>. Select all existing code and delete it. Paste the code below. Press <strong>Ctrl+S</strong> to save.</p></div></div>
+            <div class="setup-step"><div class="step-num">3</div><div class="step-body"><h4>Deploy as Web App</h4><p>Click <strong>Deploy → New Deployment</strong> → Type: <strong>Web App</strong> → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong> → Click <strong>Deploy</strong> → Authorize → Copy the URL ending in <strong>/exec</strong>.</p></div></div>
+            <div class="setup-step"><div class="step-num">4</div><div class="step-body"><h4>Paste URL below and click Connect</h4><p>The URL must end in <code style="background:var(--off);padding:1px 6px;border-radius:4px;font-family:monospace">/exec</code> — not <code style="background:var(--off);padding:1px 6px;border-radius:4px;font-family:monospace">/dev</code>.</p></div></div>
+            <div style="display:flex;gap:10px;margin:20px 0 0">
+              <input type="text" class="field-input" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1">
+              <button class="btn-teal" onclick="connectSheets()">Connect</button>
+            </div>
+            <div id="sheets-msg" style="margin-top:10px;font-size:13px;min-height:20px"></div>
+            <hr style="border:none;border-top:1px solid var(--border);margin:28px 0 20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+              <h3 style="font-size:15px;font-weight:600">Apps Script Code</h3>
+              <button class="copy-code-btn" id="copy-btn" onclick="copyScript()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copy Code</button>
+            </div>
+            <pre class="code-block" id="apps-script-pre"></pre>
+          </div>
+        </div>
+
+      </div><!-- /mgr-content -->
+    </div><!-- /mgr-layout -->
+  </div><!-- /mgr-dashboard -->
+</div><!-- /panel-manager -->
+
+<script>
+const DEPARTMENTS = ["Android Developer","Content & ASO","Designer","HR","iOS Developer","Level Creation","Network","Testing","Unity Developer","Kids Games",".Net"];
+const PASS_HASH = "d8f793bd32eaa37200c927f55540e5aa6230c521f7360e0e8833df2b4c934b99";
+async function hashPassword(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+// ─────────────────────────────────────────────
+//  APPS SCRIPT  (paste this into Google Apps Script)
+// ─────────────────────────────────────────────
+//  APPS SCRIPT  (paste this into Google Apps Script)
+// ─────────────────────────────────────────────
+const APPS_SCRIPT =
+`function doGet(e) {
+  var ss     = SpreadsheetApp.getActiveSpreadsheet();
+  var action = e.parameter.action;
+  var cb     = e.parameter.callback || "callback";
+
+  if (action === "saveResponse") {
+    var sheet   = ss.getSheetByName("Responses");
+    var qIds    = JSON.parse(e.parameter.qIds);
+    var qTexts  = JSON.parse(e.parameter.qTexts);
+    var answers = JSON.parse(e.parameter.answers);
+    if (sheet.getLastRow() === 0) {
+      var headers = ["Timestamp","Session","Name","Department"];
+      for (var i = 0; i < qTexts.length; i++) { headers.push("Q"+(i+1)+": "+qTexts[i]); }
+      sheet.appendRow(headers);
+    }
+    var row = [e.parameter.ts, e.parameter.session, e.parameter.name, e.parameter.dept];
+    for (var j = 0; j < qIds.length; j++) { row.push(answers[String(qIds[j])] || ""); }
+    sheet.appendRow(row);
+    return ContentService.createTextOutput(cb+'({"status":"ok"})').setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  if (action === "loadResponses") {
+    var sheet = ss.getSheetByName("Responses");
+    var last  = sheet.getLastRow();
+    if (last < 2) {
+      return ContentService.createTextOutput(cb+'({"status":"ok","rows":[]})').setMimeType(ContentService.MimeType.JAVASCRIPT);
+    }
+    var headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+    var data    = sheet.getRange(2,1,last-1,sheet.getLastColumn()).getValues();
+    var rows = data.map(function(row) {
+      var obj = {}; headers.forEach(function(h,i){ obj[h]=row[i]||""; }); return obj;
+    });
+    return ContentService.createTextOutput(cb+"("+JSON.stringify({status:"ok",rows:rows})+")").setMimeType(ContentService.MimeType.JAVASCRIPT);
+  }
+
+  return ContentService.createTextOutput(cb+'({"status":"ok"})').setMimeType(ContentService.MimeType.JAVASCRIPT);
+}`;
+
+// ─────────────────────────────────────────────
+//  APP STATE
+// ─────────────────────────────────────────────
+let app = {
+  loggedIn: false,
+  activeTab: 'overview',
+  questions: [
+    {id:1, text:"How would you rate today's AI session overall?",     type:"rating", options:[]},
+    {id:2, text:"The session content was relevant to my work",        type:"mcq",    options:["Strongly Agree","Agree","Neutral","Disagree","Strongly Disagree"]},
+    {id:3, text:"Would you like more sessions on AI topics?",         type:"yesno",  options:[]},
+    {id:4, text:"The session pace was appropriate",                   type:"mcq",    options:["Too fast","Just right","Too slow"]},
+    {id:5, text:"Overall, how useful was this session for your role?",type:"rating", options:[]},
+    {id:6, text:"Any suggestions or comments for future sessions?",   type:"text",   options:[]}
+  ],
+  responses:     [],
+  sessions:      [{id:"s1", name:"AI & Automation Session", date:"May 2026"}],
+  activeSession: "s1",
+  sheetsUrl:     "https://script.google.com/macros/s/AKfycbxNUdbQg--tcd1OrKl7JpLuu-yhETc7sgXBwT-Jwnt6C9LIAUxHeCDwwMqKt87vq3ffTw/exec",
+  nextId:        7
+};
+let empAnswers = {};
+
+// ─────────────────────────────────────────────
+//  NAV
+// ─────────────────────────────────────────────
+function switchMain(to) {
+  document.getElementById('panel-employee').classList.toggle('active', to==='employee');
+  document.getElementById('panel-manager').classList.toggle('active', to==='manager');
+  document.getElementById('tab-emp').classList.toggle('active', to==='employee');
+  document.getElementById('tab-mgr').classList.toggle('active', to==='manager');
+  if (to==='employee') renderEmployee();
+  if (to==='manager')  app.loggedIn ? renderDashboard() : showLogin();
+}
+
+// ─────────────────────────────────────────────
+//  EMPLOYEE
+// ─────────────────────────────────────────────
+function renderEmployee() {
+  const deptSel = document.getElementById('emp-dept');
+  if (deptSel) deptSel.innerHTML = '<option value="">— Select your department —</option>' + DEPARTMENTS.map(d=>`<option>${d}</option>`).join('');
+  const sess = app.sessions.find(s=>s.id===app.activeSession);
+  const n=document.getElementById('session-name-display');
+  const m=document.getElementById('session-meta-display');
+  const b=document.getElementById('q-count-badge');
+  if(n) n.textContent = sess?.name || 'Session Feedback';
+  if(m) m.textContent = (sess?.date||'') + ' · Share your honest feedback';
+  if(b) b.textContent = app.questions.length + ' Questions';
+  empAnswers = {};
+  renderEmpQuestions();
+  const al = document.getElementById('emp-alert');
+  if(al) al.classList.remove('show');
+}
+
+function renderEmpQuestions() {
+  const c = document.getElementById('questions-container');
+  if (!c) return;
+  c.innerHTML = app.questions.map((q,i) => {
+    let input = '';
+    if (q.type === 'rating') {
+      input = `<div class="rating-wrap">
+        ${[1,2,3,4,5].map(n=>`<button class="rating-btn" id="rb-${q.id}-${n}" onclick="pickAnswer(${q.id},${n},'rating')" type="button">${n}</button>`).join('')}
+      </div>
+      <div class="rating-labels"><span>Poor</span><span>Excellent</span></div>`;
+    } else if (q.type === 'text') {
+      input = `<textarea id="ta-${q.id}" rows="3" placeholder="Type your answer here..."
+        oninput="pickAnswer(${q.id},this.value,'text')"
+        style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--off);resize:vertical;outline:none;transition:border-color .15s"
+        onfocus="this.style.borderColor='var(--teal)';this.style.background='#fff'"
+        onblur="this.style.borderColor='var(--border)'"></textarea>`;
+    } else {
+      const opts = q.type==='yesno' ? ['Yes','No','Maybe'] : q.options;
+      input = `<div class="mcq-options">
+        ${opts.map((o,oi)=>`<button class="mcq-option" id="mo-${q.id}-${oi}" data-val="${o.replace(/"/g,'&quot;')}" onclick="pickAnswer(${q.id},this.dataset.val,'mcq')" type="button">${o}</button>`).join('')}
+      </div>`;
+    }
+    return `<div class="question-card" id="qc-${q.id}">
+      <div class="q-header"><div class="q-num" id="qnum-${q.id}">${i+1}</div><div class="q-text">${q.text}</div></div>
+      ${input}
+    </div>`;
+  }).join('');
+}
+
+function pickAnswer(qid, val, type) {
+  empAnswers[qid] = String(val);
+  document.getElementById('qc-'+qid)?.classList.add('answered');
+  const num = document.getElementById('qnum-'+qid);
+  if (num) num.style.background = val && val.trim() ? 'var(--teal)' : 'var(--navy)';
+  if (type === 'rating') {
+    [1,2,3,4,5].forEach(n => document.getElementById(`rb-${qid}-${n}`)?.classList.remove('selected'));
+    document.getElementById(`rb-${qid}-${val}`)?.classList.add('selected');
+  } else if (type === 'mcq') {
+    document.querySelectorAll(`[id^="mo-${qid}-"]`).forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll(`[id^="mo-${qid}-"]`).forEach(b => { if (b.dataset.val === String(val)) b.classList.add('selected'); });
+  }
+}
+
+async function submitFeedback() {
+  const name    = document.getElementById('emp-name')?.value?.trim();
+  const dept    = document.getElementById('emp-dept')?.value;
+  const alertEl = document.getElementById('emp-alert');
+  const alertTx = document.getElementById('emp-alert-text');
+  const btn     = document.getElementById('submit-btn');
+  if (!name || !dept) {
+    alertTx.textContent = 'Please enter your name and select your department.';
+    alertEl.classList.add('show'); return;
+  }
+  // text questions are optional — only check non-text questions
+  const unanswered = app.questions.filter(q => q.type !== 'text' && (empAnswers[q.id] === undefined || empAnswers[q.id] === ''));
+  if (unanswered.length) {
+    alertTx.textContent = `Please answer all questions. ${unanswered.length} remaining.`;
+    alertEl.classList.add('show'); return;
+  }
+  alertEl.classList.remove('show');
+  btn.disabled = true;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg> Saving…`;
+
+  const ts   = new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+  const sess = app.sessions.find(s=>s.id===app.activeSession);
+  const r    = { id:Date.now(), name, dept, session:app.activeSession, ts, answers:{...empAnswers} };
+  app.responses.push(r);
+
+  const synced = await syncToSheets({
+    ts, session: sess?.name || app.activeSession, name, dept,
+    answers: {...empAnswers},
+    qIds:   app.questions.map(q=>q.id),
+    qTexts: app.questions.map(q=>q.text)
+  });
+
+  document.getElementById('emp-body').innerHTML = `
+    <div class="success-screen">
+      <div class="success-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>Thank you, ${name}!</h2>
+      <p>Your feedback has been recorded successfully.<br>Your response helps us improve future sessions.</p>
+      <div class="sync-badge ${synced ? 'ok' : (app.sheetsUrl ? 'fail' : 'ok')}">
+        ${synced ? '✓ Saved to Google Sheet' : (app.sheetsUrl ? '⚠ Local only — check Sheets setup' : '✓ Feedback recorded')}
+      </div><br>
+      <button class="btn-ghost" onclick="resetEmpForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>Submit Another Response
+      </button>
+    </div>`;
+}
+
+function resetEmpForm() {
+  document.getElementById('emp-body').innerHTML = `
+    <div class="form-card">
+      <div class="form-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Your Details</div>
+      <div class="field-row">
+        <div class="field-group"><label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Full Name <span class="req">*</span></label><input type="text" class="field-input" id="emp-name" placeholder="Enter your full name"></div>
+        <div class="field-group"><label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Department <span class="req">*</span></label><select class="field-input" id="emp-dept"><option value="">— Select your department —</option>${DEPARTMENTS.map(d=>`<option>${d}</option>`).join('')}</select></div>
+      </div>
+    </div>
+    <div id="questions-container"></div>
+    <div class="alert-msg error" id="emp-alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="emp-alert-text"></span></div>
+    <button class="submit-btn" id="submit-btn" onclick="submitFeedback()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Submit Feedback</button>`;
+  empAnswers = {};
+  renderEmpQuestions();
+}
+
+// ─────────────────────────────────────────────
+//  JSONP — works cross-origin from local HTML
+// ─────────────────────────────────────────────
+function jsonpCall(params) {
+  return new Promise(resolve => {
+    if (!app.sheetsUrl) { resolve(null); return; }
+    const cbName = '_jsonp_' + Date.now();
+    let done = false;
+    const timer = setTimeout(() => { if(done)return; done=true; cleanup(); resolve(null); }, 12000);
+    window[cbName] = function(data) { if(done)return; done=true; clearTimeout(timer); cleanup(); resolve(data); };
+    function cleanup() {
+      try { delete window[cbName]; } catch(e) {}
+      const s = document.getElementById('_jsonp_s');
+      if(s) s.parentNode?.removeChild(s);
+    }
+    params.callback = cbName;
+    const base   = app.sheetsUrl.replace(/[?&]+$/, '');
+    const script = document.createElement('script');
+    script.id  = '_jsonp_s';
+    script.src = base + '?' + new URLSearchParams(params).toString();
+    script.onerror = () => { if(done)return; done=true; clearTimeout(timer); cleanup(); resolve(null); };
+    document.head.appendChild(script);
+  });
+}
+
+async function syncToSheets(payload) {
+  const data = await jsonpCall({
+    action:  'saveResponse',
+    ts:      payload.ts,
+    session: payload.session,
+    name:    payload.name,
+    dept:    payload.dept,
+    answers: JSON.stringify(payload.answers),
+    qIds:    JSON.stringify(payload.qIds),
+    qTexts:  JSON.stringify(payload.qTexts)
+  });
+  return data && data.status === 'ok';
+}
+
+// ─────────────────────────────────────────────
+//  LOAD RESPONSES FROM GOOGLE SHEET
+// ─────────────────────────────────────────────
+async function loadResponsesFromSheet() {
+  if (!app.sheetsUrl) return;
+  const btn = document.getElementById('load-btn');
+  if(btn) { btn.disabled=true; btn.textContent='Loading…'; }
+  const data = await jsonpCall({ action: 'loadResponses' });
+  if(btn) { btn.disabled=false; btn.textContent='↻ Refresh from Sheet'; }
+  if (!data || !data.rows || !data.rows.length) return;
+
+  // Parse rows back into app.responses format
+  const parsed = [];
+  data.rows.forEach((row, idx) => {
+    const ts      = row['Timestamp'] || '';
+    const session = row['Session']   || '';
+    const name    = row['Name']      || '';
+    const dept    = row['Department']|| '';
+    if (!name) return;
+
+    // find matching session id
+    const sessObj = app.sessions.find(s=>s.name===session) || app.sessions[0];
+
+    // build answers map by matching question text to column header
+    const answers = {};
+    app.questions.forEach((q, qi) => {
+      const colKey = `Q${qi+1}: ${q.text}`;
+      if (row[colKey] !== undefined && row[colKey] !== '') {
+        answers[q.id] = String(row[colKey]);
+      }
+    });
+
+    parsed.push({
+      id:      'sheet_' + idx,
+      name, dept, ts,
+      session: sessObj?.id || app.activeSession,
+      answers
+    });
+  });
+
+  // Merge — avoid duplicates by ts+name combo
+  const existing = new Set(app.responses.map(r=>r.name+'|'+r.ts));
+  let added = 0;
+  parsed.forEach(r => {
+    if (!existing.has(r.name+'|'+r.ts)) { app.responses.push(r); added++; }
+  });
+
+  // Re-render current tab
+  renderDashboard();
+  if(added > 0 && btn) {
+    const msg = document.getElementById('load-msg');
+    if(msg) { msg.textContent = `✓ Loaded ${added} new response(s) from sheet`; setTimeout(()=>msg.textContent='', 4000); }
+  }
+}
+
+// ─────────────────────────────────────────────
+//  MANAGER AUTH
+// ─────────────────────────────────────────────
+function showLogin() {
+  document.getElementById('mgr-login').style.display = 'flex';
+  document.getElementById('mgr-dashboard').style.display = 'none';
+}
+async function doLogin() {
+  const entered = document.getElementById('mgr-pass').value;
+  const hashed  = await hashPassword(entered);
+  if (hashed === PASS_HASH) {
+    app.loggedIn = true;
+    document.getElementById('mgr-login').style.display = 'none';
+    document.getElementById('mgr-dashboard').style.display = 'flex';
+    loadResponsesFromSheet();
+    renderDashboard();
+  } else {
+    document.getElementById('login-error').classList.add('show');
+  }
+}
+function doLogout() {
+  app.loggedIn = false;
+  document.getElementById('mgr-pass').value = '';
+  document.getElementById('login-error').classList.remove('show');
+  showLogin();
+}
+function renderDashboard() { showTab(app.activeTab); }
+
+function showTab(tab) {
+  app.activeTab = tab;
+  document.querySelectorAll('.mgr-subtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('tab-'+tab)?.classList.add('active');
+  document.getElementById('sl-'+tab)?.classList.add('active');
+  ({overview:renderOverview, questions:renderQuestionsTab, responses:renderResponsesTab,
+    analytics:renderAnalyticsTab, sessions:renderSessionsTab, sheets:renderSheetsTab})[tab]?.();
+}
+
+// ─────────────────────────────────────────────
+//  OVERVIEW
+// ─────────────────────────────────────────────
+function renderOverview() {
+  const sess = app.sessions.find(s=>s.id===app.activeSession);
+  const el = document.getElementById('ov-session-name');
+  if(el) el.textContent = sess?.name||'';
+  const res   = app.responses.filter(r=>r.session===app.activeSession);
+  const depts = [...new Set(res.map(r=>r.dept))].length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-box"><div class="stat-label">Total Responses</div><div class="stat-value">${res.length}</div></div>
+    <div class="stat-box coral"><div class="stat-label">Departments</div><div class="stat-value">${depts}</div></div>
+    <div class="stat-box amber"><div class="stat-label">Questions</div><div class="stat-value">${app.questions.length}</div></div>
+    <div class="stat-box navy"><div class="stat-label">Sessions</div><div class="stat-value">${app.sessions.length}</div></div>`;
+  const recent = [...res].reverse().slice(0,5);
+  const tbl = document.getElementById('recent-responses-table');
+  if (!recent.length) {
+    tbl.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No responses yet. Share the Employee tab with your team.</p></div>`;
+    return;
+  }
+  tbl.innerHTML = `<table><thead><tr><th>Name</th><th>Department</th><th>Submitted</th><th>Answers</th></tr></thead><tbody>
+    ${recent.map(r=>`<tr>
+      <td style="font-weight:500;color:var(--text)">${r.name}</td>
+      <td><span class="dept-chip">${r.dept}</span></td>
+      <td style="font-size:12.5px;color:var(--muted)">${r.ts}</td>
+      <td>${app.questions.slice(0,3).map((q,i)=>`<span class="ans-pill">Q${i+1} <b>${r.answers[q.id]||'—'}</b></span>`).join('')}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ─────────────────────────────────────────────
+//  QUESTIONS
+// ─────────────────────────────────────────────
+function renderQuestionsTab() {
+  const qc = document.getElementById('q-count');
+  if(qc) qc.textContent = app.questions.length;
+  const body = document.getElementById('q-list-body');
+  if (!app.questions.length) {
+    body.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p>No questions yet. Click Add Question.</p></div>`;
+    return;
+  }
+  body.innerHTML = app.questions.map((q,i)=>`
+    <div class="q-list-item">
+      <div class="q-idx">${i+1}</div>
+      <div class="q-list-text">
+        <p>${q.text}</p>
+        <span>${q.type==='rating'?'Rating 1–5':q.type==='yesno'?'Yes/No/Maybe':q.type==='text'?'Text Field':'MCQ: '+q.options.join(', ')}</span>
+      </div>
+      <span class="tag ${q.type==='rating'?'tag-amber':q.type==='yesno'?'tag-teal':q.type==='text'?'tag-navy':'tag-navy'}">${q.type==='rating'?'Rating':q.type==='yesno'?'Yes/No':q.type==='text'?'Text':'MCQ'}</span>
+      <button class="btn-danger-sm" onclick="deleteQ(${q.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+    </div>`).join('');
+}
+function toggleOptions() {
+  const t = document.getElementById('nq-type').value;
+  document.getElementById('options-section').style.display = t==='mcq' ? 'block' : 'none';
+}
+function addOpt() {
+  const l=document.getElementById('options-list'), n=l.children.length+1;
+  const d=document.createElement('div'); d.className='option-input-row';
+  d.innerHTML=`<input type="text" class="field-input" placeholder="Option ${n}"><button class="btn-danger-sm" onclick="removeOpt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+  l.appendChild(d);
+}
+function removeOpt(btn) { btn.closest('.option-input-row').remove(); }
+function saveQuestion() {
+  const text = document.getElementById('nq-text').value.trim();
+  const type = document.getElementById('nq-type').value;
+  if (!text) { alert('Please enter the question text.'); return; }
+  let options = [];
+  if (type==='mcq') {
+    options = Array.from(document.querySelectorAll('#options-list input')).map(i=>i.value.trim()).filter(Boolean);
+    if (options.length < 2) { alert('Please add at least 2 options.'); return; }
+  }
+  app.questions.push({id:app.nextId++, text, type, options});
+  document.getElementById('add-q-form').classList.remove('open');
+  document.getElementById('nq-text').value = '';
+  renderQuestionsTab();
+  renderEmployee();
+}
+function deleteQ(id) {
+  if (!confirm('Delete this question?')) return;
+  app.questions = app.questions.filter(q=>q.id!==id);
+  renderQuestionsTab();
+  renderEmployee();
+}
+
+// ─────────────────────────────────────────────
+//  RESPONSES
+// ─────────────────────────────────────────────
+let currentView = 'table';
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('view-btn-table').style.background  = v==='table'  ? 'var(--navy)' : 'transparent';
+  document.getElementById('view-btn-table').style.color       = v==='table'  ? '#fff' : 'var(--text2)';
+  document.getElementById('view-btn-detail').style.background = v==='detail' ? 'var(--navy)' : 'transparent';
+  document.getElementById('view-btn-detail').style.color      = v==='detail' ? '#fff' : 'var(--text2)';
+  renderResponsesTable();
+}
+
+function renderResponsesTab() {
+  const fS=document.getElementById('f-session'), fD=document.getElementById('f-dept');
+  if(fS) fS.innerHTML = '<option value="">All sessions</option>'+app.sessions.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  if(fD) fD.innerHTML = '<option value="">All departments</option>'+DEPARTMENTS.map(d=>`<option>${d}</option>`).join('');
+  renderResponsesTable();
+}
+
+function renderResponsesTable() {
+  const fS   = document.getElementById('f-session')?.value||'';
+  const fD   = document.getElementById('f-dept')?.value||'';
+  let res    = app.responses;
+  if(fS) res = res.filter(r=>r.session===fS);
+  if(fD) res = res.filter(r=>r.dept===fD);
+  const body = document.getElementById('responses-table');
+  if (!res.length) {
+    body.innerHTML=`<div class="table-card"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No responses yet. Click "Refresh from Sheet" to load existing data.</p></div></div>`;
+    return;
+  }
+  if (currentView === 'table') renderTableView(res, body);
+  else renderDetailView(res, body, fD);
+}
+
+function renderTableView(res, body) {
+  body.innerHTML = `<div class="table-card"><table>
+    <thead><tr><th>Name</th><th>Department</th><th>Session</th><th>Submitted</th><th>All Answers</th></tr></thead>
+    <tbody>${[...res].reverse().map(r=>{
+      const s=app.sessions.find(x=>x.id===r.session);
+      return `<tr>
+        <td style="font-weight:500;color:var(--text)">${r.name}</td>
+        <td><span class="dept-chip">${r.dept}</span></td>
+        <td style="font-size:13px">${s?.name||r.session}</td>
+        <td style="font-size:12px;color:var(--muted)">${r.ts}</td>
+        <td>${app.questions.map((q,i)=>`<span class="ans-pill">Q${i+1} <b style="color:${r.answers[q.id]?'var(--teal2)':'var(--muted)'}">${r.answers[q.id]||'—'}</b></span>`).join('')}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div>`;
+}
+
+function renderDetailView(res, body, filterDept) {
+  const grouped = {};
+  if (filterDept) {
+    grouped[filterDept] = res.filter(r=>r.dept===filterDept);
+  } else {
+    res.forEach(r=>{ if(!grouped[r.dept]) grouped[r.dept]=[]; grouped[r.dept].push(r); });
+  }
+  let html = '';
+  Object.entries(grouped).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([dept, deptRes])=>{
+    html += `
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-bottom:20px;overflow:hidden">
+      <div style="background:var(--navy);padding:16px 24px;display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;background:rgba(0,201,167,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div>
+          <h3 style="font-size:15px;font-weight:600;color:#fff;margin-bottom:2px">${dept}</h3>
+          <span style="font-size:12px;color:rgba(255,255,255,0.5)">${deptRes.length} response${deptRes.length!==1?'s':''}</span>
+        </div>
+      </div>
+      ${[...deptRes].reverse().map((r,ri)=>{
+        const s = app.sessions.find(x=>x.id===r.session);
+        return `
+        <div style="padding:20px 24px;${ri<deptRes.length-1?'border-bottom:1px solid var(--border)':''}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div style="width:38px;height:38px;background:rgba(0,201,167,0.1);border:1.5px solid rgba(0,201,167,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--teal2);flex-shrink:0">${r.name.charAt(0).toUpperCase()}</div>
+            <div>
+              <p style="font-size:14.5px;font-weight:600;color:var(--text)">${r.name}</p>
+              <p style="font-size:12px;color:var(--muted)">${s?.name||r.session} &nbsp;·&nbsp; ${r.ts}</p>
+            </div>
+          </div>
+          <div style="display:grid;gap:10px">
+            ${app.questions.map((q,qi)=>{
+              const ans    = r.answers[q.id];
+              const hasAns = ans && ans.trim() && ans !== '—';
+              return `
+              <div style="background:var(--off);border-radius:var(--radius-sm);padding:12px 16px;border-left:3px solid ${hasAns?'var(--teal)':'var(--border)'}">
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px">Q${qi+1} · ${q.type==='rating'?'Rating':q.type==='yesno'?'Yes/No':q.type==='text'?'Text':'MCQ'}</div>
+                <div style="font-size:13.5px;color:var(--text2);margin-bottom:8px;line-height:1.5">${q.text}</div>
+                ${q.type==='text' && hasAns
+                  ? `<div style="padding:8px 12px;background:rgba(0,201,167,0.07);border-radius:6px;font-size:13.5px;color:var(--text);border:1px solid rgba(0,201,167,0.2);line-height:1.6">${ans}</div>`
+                  : `<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:13.5px;font-weight:600;background:${hasAns?'rgba(0,201,167,0.1)':'rgba(138,155,176,0.1)'};color:${hasAns?'var(--teal2)':'var(--muted)'};border:1.5px solid ${hasAns?'rgba(0,201,167,0.25)':'var(--border)'}">
+                    ${hasAns?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="5" y1="12" x2="19" y2="12"/></svg>'}
+                    ${hasAns ? ans : 'Not answered'}
+                  </div>`
+                }
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  });
+  body.innerHTML = html || `<div class="table-card"><div class="empty-state"><p>No responses for this department.</p></div></div>`;
+}
+
+function exportCSV() {
+  if (!app.responses.length) { alert('No responses to export.'); return; }
+  const h = ['Timestamp','Session','Name','Department',...app.questions.map((q,i)=>`Q${i+1}: ${q.text}`)];
+  const rows = app.responses.map(r=>{
+    const s=app.sessions.find(x=>x.id===r.session);
+    return [r.ts, s?.name||r.session, r.name, r.dept, ...app.questions.map(q=>r.answers[q.id]||'')];
+  });
+  const csv = [h,...rows].map(r=>r.map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='AI_Session_Feedback.csv'; a.click();
+}
+
+// ─────────────────────────────────────────────
+//  ANALYTICS
+// ─────────────────────────────────────────────
+function renderAnalyticsTab() {
+  const res  = app.responses;
+  const body = document.getElementById('analytics-body');
+  if (!res.length) { body.innerHTML=`<div class="table-card"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><p>No responses yet.</p></div></div>`; return; }
+  const dc={}; res.forEach(r=>{ dc[r.dept]=(dc[r.dept]||0)+1; });
+  const maxD=Math.max(...Object.values(dc));
+  let html=`<div class="table-card" style="padding:24px 28px;margin-bottom:20px">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:18px">Responses by Department</h3>
+    ${Object.entries(dc).sort((a,b)=>b[1]-a[1]).map(([d,n])=>`
+      <div class="bar-chart-item">
+        <div class="bar-label-row"><span>${d}</span><span>${n}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxD*100)}%"></div></div>
+      </div>`).join('')}
+  </div>`;
+  app.questions.forEach((q,qi)=>{
+    if (q.type === 'text') {
+      // For text questions show all written answers
+      const answers = res.map(r=>r.answers[q.id]).filter(a=>a&&a.trim()&&a!=='—');
+      if (!answers.length) return;
+      html+=`<div class="table-card" style="padding:24px 28px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <div style="width:26px;height:26px;background:var(--navy);color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">Q${qi+1}</div>
+          <h3 style="font-size:14.5px;font-weight:600">${q.text}</h3>
+        </div>
+        ${answers.map(a=>`<div style="padding:10px 14px;background:var(--off);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13.5px;color:var(--text2);border-left:3px solid var(--teal);line-height:1.6">${a}</div>`).join('')}
+      </div>`;
+      return;
+    }
+    const opts = q.type==='rating'?['1','2','3','4','5']:q.type==='yesno'?['Yes','No','Maybe']:q.options;
+    const counts={}; opts.forEach(o=>counts[o]=0);
+    res.forEach(r=>{ const v=r.answers[q.id]; if(v) counts[v]=(counts[v]||0)+1; });
+    const maxV=Math.max(...Object.values(counts),1);
+    html+=`<div class="table-card" style="padding:24px 28px;margin-bottom:16px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div style="width:26px;height:26px;background:var(--navy);color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">Q${qi+1}</div>
+        <h3 style="font-size:14.5px;font-weight:600">${q.text}</h3>
+      </div>
+      ${opts.map(o=>`<div class="bar-chart-item">
+        <div class="bar-label-row"><span>${o}</span><span>${counts[o]||0}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((counts[o]||0)/maxV*100)}%"></div></div>
+      </div>`).join('')}
+    </div>`;
+  });
+  body.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+//  SESSIONS
+// ─────────────────────────────────────────────
+function renderSessionsTab() {
+  document.getElementById('sessions-table').innerHTML = `<table>
+    <thead><tr><th>Session Name</th><th>Date</th><th>Responses</th><th>Status</th><th>Action</th></tr></thead>
+    <tbody>${app.sessions.map(s=>{
+      const cnt=app.responses.filter(r=>r.session===s.id).length;
+      return `<tr>
+        <td style="font-weight:500;color:var(--text)">${s.name}</td><td>${s.date}</td>
+        <td><span class="tag tag-navy">${cnt} response${cnt!==1?'s':''}</span></td>
+        <td><span class="tag ${s.id===app.activeSession?'tag-teal':'tag-amber'}">${s.id===app.activeSession?'Active':'Inactive'}</span></td>
+        <td><button class="btn-outline" onclick="setActiveSession('${s.id}')">Set Active</button></td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+function setActiveSession(id) { app.activeSession=id; renderSessionsTab(); renderEmployee(); }
+function addSession() {
+  const name=prompt('Session name:');
+  if(!name?.trim()) return;
+  const id='s'+Date.now(), now=new Date();
+  app.sessions.push({id, name:name.trim(), date:now.toLocaleDateString('en-IN',{month:'short',year:'numeric'})});
+  renderSessionsTab();
+}
+
+// ─────────────────────────────────────────────
+//  GOOGLE SHEETS TAB
+// ─────────────────────────────────────────────
+function renderSheetsTab() {
+  // URL is hardcoded - always show connected
+  document.getElementById("connected-chip").style.display = "block";
+  const urlEl = document.getElementById('sheets-url');
+  if (urlEl && app.sheetsUrl) {
+    urlEl.value = app.sheetsUrl;
+    document.getElementById('connected-chip').style.display = 'block';
+  }
+  const pre = document.getElementById('apps-script-pre');
+  if (pre) pre.textContent = APPS_SCRIPT;
+}
+function connectSheets() {
+  const url = document.getElementById('sheets-url')?.value?.trim();
+  const msg = document.getElementById('sheets-msg');
+  if (!url || !url.includes('script.google.com')) { msg.innerHTML='<span style="color:var(--coral)">Please enter a valid Google Apps Script URL.</span>'; return; }
+  if (!url.endsWith('/exec')) { msg.innerHTML='<span style="color:var(--coral)">URL must end in <b>/exec</b> — not /dev.</span>'; return; }
+  app.sheetsUrl = url;
+  document.getElementById('connected-chip').style.display = 'block';
+  msg.innerHTML = '<span style="color:#166534">✓ Connected! Click "Refresh from Sheet" in the Responses tab to load your data.</span>';
+}
+function copyScript() {
+  navigator.clipboard?.writeText(APPS_SCRIPT).then(()=>{
+    const b=document.getElementById('copy-btn');
+    if(b){ b.textContent='✓ Copied!'; setTimeout(()=>{ b.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copy Code`; },2500); }
+  });
+}
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+renderEmployee();
+</script>
+</body>
+</html>
