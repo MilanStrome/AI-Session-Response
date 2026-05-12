@@ -636,9 +636,8 @@
 
 <script>
 const DEPARTMENTS = ["Android Developer","Content & ASO","Designer","HR","iOS Developer","Level Creation","Network","Testing","Unity Developer","Kids Games",".Net"];
-const PASS_HASH       = "d8f793bd32eaa37200c927f55540e5aa6230c521f7360e0e8833df2b4c934b99";       // mouse123
-const SUPER_PASS_HASH = "c7cac0395a22ef772ccf3fc8644117d84c449a476d7f81629bd2abea9195438f"; // wiremouse123
-async function hashPassword(str) {
+const PASS_HASH       = "d8f793bd32eaa37200c927f55540e5aa6230c521f7360e0e8833df2b4c934b99";
+const SUPER_PASS_HASH = "c7cac0395a22ef772ccf3fc8644117d84c449a476d7f81629bd2abea9195438f";
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
