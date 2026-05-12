@@ -891,7 +891,20 @@ function pickRating(clickedBtn, qid, val) {
     if (rn) rn.style.color = '#00a88c';
     if (rl) rl.style.color = '#00a88c';
   }
-  pickAnswer(qid, val, 'rating');
+  // Store answer + check trigger directly
+  empAnswers[qid] = String(val);
+  const card2 = document.getElementById('qc-'+qid);
+  if (card2) {
+    card2.classList.add('answered');
+    card2.classList.remove('required-error');
+    card2.style.removeProperty('border-color');
+    card2.style.removeProperty('background-color');
+    const errMsg2 = card2.querySelector('.q-required-msg');
+    if (errMsg2) errMsg2.remove();
+  }
+  const num2 = document.getElementById('qnum-'+qid);
+  if (num2) num2.style.background = '#00c9a7';
+  checkFollowupTrigger(qid, val, 'rating');
 }
 
 function pickAnswer(qid, val, type) {
@@ -908,32 +921,7 @@ function pickAnswer(qid, val, type) {
   }
   const num = document.getElementById('qnum-'+qid);
   if (num) num.style.background = val && val.trim() ? 'var(--teal)' : 'var(--navy)';
-  if (type === 'rating') {
-    const qCard = document.getElementById('qc-'+qid);
-    if (qCard) {
-      qCard.querySelectorAll('.rating-btn').forEach(function(b) {
-        b.style.background   = '#ffffff';
-        b.style.borderColor  = '#e2e8f0';
-        b.style.color        = '#4a5568';
-        const rn = b.querySelector('.r-num');
-        const rl = b.querySelector('.r-lbl');
-        if (rn) rn.style.color = '#4a5568';
-        if (rl) rl.style.color = '#8a9bb0';
-      });
-      qCard.querySelectorAll('.rating-btn').forEach(function(b) {
-        if (b.dataset.val === String(val)) {
-          b.style.background  = '#00c9a7';
-          b.style.borderColor = '#00c9a7';
-          b.style.color       = '#ffffff';
-          const rn = b.querySelector('.r-num');
-          const rl = b.querySelector('.r-lbl');
-          if (rn) rn.style.color = '#ffffff';
-          if (rl) rl.style.color = '#ffffff';
-        }
-      });
-    }
-    checkFollowupTrigger(qid, val, type);
-  } else if (type === 'mcq') {
+  if (type === 'mcq') {
     document.querySelectorAll(`[id^="mo-${qid}-"]`).forEach(b => b.classList.remove('selected'));
     document.querySelectorAll(`[id^="mo-${qid}-"]`).forEach(b => { if (b.dataset.val === String(val)) b.classList.add('selected'); });
     checkFollowupTrigger(qid, val, type);
