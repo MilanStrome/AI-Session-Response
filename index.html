@@ -837,7 +837,7 @@ function renderEmpQuestions() {
       </div>
       <div id="followup-${q.id}" style="display:none" class="followup-box">
         <div class="followup-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Could you share why you feel this way?</div>
-        <textarea class="followup-textarea" id="fu-${q.id}" rows="2" placeholder="Your reason (optional, min 20 characters)..."
+        <textarea class="followup-textarea" id="fu-${q.id}" rows="2" placeholder="Your reason (min 20 characters)..."
           oninput="empFollowups[${q.id}]=this.value;updateFollowupCounter(${q.id},this.value)"></textarea>
         <div class="char-counter below" id="fucc-${q.id}">0 / 20 minimum characters</div>
       </div>`;
@@ -858,7 +858,7 @@ function renderEmpQuestions() {
       </div>
       <div id="followup-${q.id}" style="display:none" class="followup-box">
         <div class="followup-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Could you share why you feel this way?</div>
-        <textarea class="followup-textarea" id="fu-${q.id}" rows="2" placeholder="Your reason (optional, min 20 characters)..."
+        <textarea class="followup-textarea" id="fu-${q.id}" rows="2" placeholder="Your reason (min 20 characters)..."
           oninput="empFollowups[${q.id}]=this.value;updateFollowupCounter(${q.id},this.value)"></textarea>
         <div class="char-counter below" id="fucc-${q.id}">0 / 20 minimum characters</div>
       </div>`;
