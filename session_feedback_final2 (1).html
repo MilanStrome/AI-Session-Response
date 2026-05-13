@@ -1,0 +1,2436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Session Feedback Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --navy:#0d1b2a; --navy2:#1b2d42; --navy3:#243447;
+    --teal:#00c9a7; --teal2:#00a88c;
+    --coral:#ff6b6b; --amber:#ffc145;
+    --white:#ffffff; --off:#f4f6f9;
+    --muted:#8a9bb0; --border:#e2e8f0;
+    --text:#1a2332; --text2:#4a5568;
+    --shadow-sm:0 2px 8px rgba(13,27,42,0.07);
+    --radius:14px; --radius-sm:8px;
+    --topbar-bg:#0d1b2a;
+  }
+  body.dark {
+    --white:#1e2d3d; --off:#162130; --border:#2a3d52;
+    --text:#e8eef5; --text2:#9ab0c8; --muted:#5a7a96;
+    --shadow-sm:0 2px 8px rgba(0,0,0,0.25);
+    background:var(--off);
+  }
+  body.dark .topbar { background:#0a1520; }
+  body.dark .mgr-sidebar { background:#0a1520; }
+  body.dark .sidebar-divider { background:rgba(255,255,255,0.05); }
+  body.dark .login-page { background:linear-gradient(160deg,#060e18 0%,#0f1e2e 60%,var(--off) 100%); }
+  body.dark .field-input { background:var(--off); border-color:var(--border); color:var(--text); }
+  body.dark .field-input:focus { background:#1a2d40; border-color:var(--teal); }
+  body.dark .form-card,.dark .question-card,.dark .table-card,.dark .stat-box,.dark .add-q-form,.dark .login-card,.dark .modal-box { background:var(--white); border-color:var(--border); }
+  body.dark thead tr { background:#1a2a3a; }
+  body.dark tr:hover td { background:#1a2d40; }
+  body.dark td { border-color:var(--border); }
+  body.dark .q-list-item:hover { background:#1a2d40; }
+  body.dark .mcq-option { background:var(--off); border-color:var(--border); color:var(--text2); }
+  body.dark
+  body.dark .btn-outline { border-color:var(--border); color:var(--text2); background:transparent; }
+  body.dark .btn-outline:hover { border-color:var(--teal); color:var(--teal); }
+  body.dark .dept-chip { background:rgba(0,201,167,0.1); color:var(--teal2); }
+  body.dark .ans-pill { background:var(--off); border-color:var(--border); }
+  body.dark .mgr-content { background:var(--off); }
+  body.dark .page-header h1 { color:var(--text); }
+  body.dark .stat-label { color:var(--muted); }
+  body.dark .stat-value { color:var(--text); }
+  body.dark .success-screen,.dark .dup-screen { background:var(--white); }
+  body.dark .session-hero { background:linear-gradient(135deg,#0a1520 0%,#162130 100%); }
+  body.dark #floating-tooltip { background:#e8eef5; color:#0d1b2a; }
+  body.dark #floating-tooltip::after { border-top-color:#e8eef5; }
+  .theme-btn { display:flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:8px; border:none; background:rgba(255,255,255,0.08); cursor:pointer; color:rgba(255,255,255,0.6); transition:all .2s; margin-right:4px; }
+  .theme-btn:hover { background:rgba(255,255,255,0.15); color:#fff; }
+  .theme-btn svg { width:16px; height:16px; }
+  html, body { width:100%; }
+  body { font-family:'DM Sans',sans-serif; background:var(--off); color:var(--text); min-height:100vh; font-size:15px; }
+  .topbar { background:var(--navy); padding:0 32px; display:flex; align-items:center; justify-content:space-between; height:64px; position:sticky; top:0; z-index:100; box-shadow:0 2px 16px rgba(0,0,0,0.18); }
+  .brand { display:flex; align-items:center; gap:12px; }
+  .brand-icon { width:36px; height:36px; background:linear-gradient(135deg,var(--teal),var(--teal2)); border-radius:10px; display:flex; align-items:center; justify-content:center; }
+  .brand-icon svg { width:20px; height:20px; }
+  .brand-name { font-size:17px; font-weight:600; color:#fff; }
+  .brand-name span { color:var(--teal); }
+  .nav-tabs { display:flex; gap:4px; }
+  .nav-tab { padding:8px 20px; border-radius:8px; border:none; background:transparent; color:rgba(255,255,255,0.55); font-size:14px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; display:flex; align-items:center; gap:7px; }
+  .nav-tab svg { width:16px; height:16px; opacity:.7; }
+  .nav-tab:hover { color:#fff; background:rgba(255,255,255,0.08); }
+  .nav-tab.active { background:rgba(0,201,167,0.18); color:var(--teal); }
+  .nav-tab.active svg { opacity:1; }
+  .panel { display:none; }
+  .panel.active { display:block; }
+  #panel-manager.active { display:flex; flex-direction:column; height:calc(100vh - 64px); overflow:hidden; width:100%; }
+
+  /* EMPLOYEE */
+  .emp-layout { max-width:680px; margin:40px auto; padding:0 20px 80px; }
+  .session-hero { background:linear-gradient(135deg,var(--navy) 0%,var(--navy3) 100%); border-radius:var(--radius); padding:28px 32px; margin-bottom:28px; display:flex; align-items:center; gap:20px; position:relative; overflow:hidden; }
+  .session-hero::before { content:''; position:absolute; right:-40px; top:-40px; width:180px; height:180px; background:radial-gradient(circle,rgba(0,201,167,0.15) 0%,transparent 70%); border-radius:50%; }
+  .hero-icon { width:56px; height:56px; flex-shrink:0; background:rgba(0,201,167,0.15); border:1.5px solid rgba(0,201,167,0.3); border-radius:14px; display:flex; align-items:center; justify-content:center; }
+  .hero-icon svg { width:28px; height:28px; color:var(--teal); }
+  .hero-text h2 { font-family:'DM Serif Display',serif; font-size:22px; color:#fff; margin-bottom:5px; }
+  .hero-text p { font-size:13.5px; color:rgba(255,255,255,0.55); }
+  .hero-badge { margin-left:auto; flex-shrink:0; background:rgba(0,201,167,0.15); border:1px solid rgba(0,201,167,0.25); color:var(--teal); padding:6px 14px; border-radius:20px; font-size:12px; font-weight:500; }
+  .form-card { background:var(--white); border-radius:var(--radius); padding:28px 32px; margin-bottom:18px; box-shadow:var(--shadow-sm); border:1px solid var(--border); }
+  .form-card-title { font-size:13px; font-weight:600; text-transform:uppercase; letter-spacing:.8px; color:var(--muted); margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+  .form-card-title svg { width:15px; height:15px; }
+  .field-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .field-group label { display:block; font-size:13px; font-weight:500; color:var(--text2); margin-bottom:7px; }
+  .field-group label .req { color:var(--coral); margin-left:2px; }
+  .field-input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14.5px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--off); transition:border-color .15s,background .15s; outline:none; }
+  .field-input:focus { border-color:var(--teal); background:#fff; }
+  .question-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:24px 28px; margin-bottom:14px; box-shadow:var(--shadow-sm); transition:border-color .2s,background-color .2s; }
+  .question-card.answered { border-color:rgba(0,201,167,0.4); }
+  .question-card.required-error { border-color:rgba(255,107,107,0.7) !important; background-color:rgba(255,107,107,0.03) !important; }
+  .question-card.answered.required-error { border-color:rgba(255,107,107,0.7) !important; background-color:rgba(255,107,107,0.03) !important; }
+  .q-required-msg { font-size:12px; color:var(--coral); margin-top:8px; display:flex; align-items:center; gap:4px; }
+  .q-header { display:flex; align-items:flex-start; gap:14px; margin-bottom:16px; }
+  .q-num { width:28px; height:28px; flex-shrink:0; background:var(--navy); color:#fff; border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; margin-top:1px; transition:background .2s; }
+  .question-card.answered .q-num { background:var(--teal); }
+  .q-text { font-size:15.5px; font-weight:500; color:var(--text); line-height:1.5; }
+  .mcq-options { display:flex; flex-wrap:wrap; gap:10px; }
+  .mcq-option { padding:9px 18px; border:1.5px solid var(--border); border-radius:30px; cursor:pointer; font-size:14px; color:var(--text2); background:var(--off); transition:all .18s; user-select:none; font-family:'DM Sans',sans-serif; }
+  .mcq-option:hover { border-color:var(--teal); color:var(--teal); background:rgba(0,201,167,0.05); }
+  .mcq-option.selected { border-color:var(--teal); background:rgba(0,201,167,0.1); color:var(--teal2); font-weight:500; }
+  .rating-wrap { display:flex; gap:8px; flex-wrap:wrap; }
+  .rating-btn { padding:9px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); cursor:pointer; background:var(--white); color:var(--text2); display:inline-flex; flex-direction:column; align-items:center; gap:2px; min-width:58px; font-family:'DM Sans',sans-serif; font-size:13px; }
+  .rating-btn.selected { border-color:#00c9a7; background:#00c9a7; color:#ffffff; font-weight:700; }
+  .rating-btn.selected .r-num { color:#ffffff; }
+  .rating-btn.selected .r-lbl { color:#ffffff; }
+  .rating-btn .r-num { font-size:16px; font-weight:700; line-height:1; }
+  .rating-btn .r-lbl { font-size:10px; font-weight:500; line-height:1; }
+  .submit-btn { width:100%; padding:15px; background:linear-gradient(135deg,var(--teal) 0%,var(--teal2) 100%); color:#fff; border:none; border-radius:var(--radius-sm); font-size:16px; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; display:flex; align-items:center; justify-content:center; gap:10px; box-shadow:0 4px 16px rgba(0,201,167,0.35); }
+  .submit-btn:hover { transform:translateY(-1px); box-shadow:0 6px 20px rgba(0,201,167,0.45); }
+  .submit-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+  .alert-msg { padding:12px 16px; border-radius:var(--radius-sm); font-size:13.5px; margin-bottom:16px; display:none; align-items:center; gap:10px; }
+  .alert-msg.show { display:flex; }
+  .alert-msg.error { background:#fff5f5; border:1px solid #fed7d7; color:#c53030; }
+  .alert-msg svg { width:16px; height:16px; flex-shrink:0; }
+  .success-screen { text-align:center; padding:60px 40px; background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow-sm); border:1px solid var(--border); }
+  .success-circle { width:80px; height:80px; background:linear-gradient(135deg,var(--teal),var(--teal2)); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; box-shadow:0 8px 24px rgba(0,201,167,0.35); }
+  .success-circle svg { width:36px; height:36px; color:#fff; }
+  .success-screen h2 { font-family:'DM Serif Display',serif; font-size:28px; margin-bottom:10px; }
+  .success-screen p { color:var(--text2); font-size:15px; line-height:1.6; }
+  .sync-badge { display:inline-flex; align-items:center; gap:6px; margin-top:14px; padding:7px 16px; border-radius:20px; font-size:13px; font-weight:500; }
+  .sync-badge.ok { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+  .sync-badge.fail { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
+  .btn-ghost { margin-top:20px; display:inline-flex; align-items:center; gap:8px; padding:11px 24px; border:1.5px solid var(--border); border-radius:var(--radius-sm); background:transparent; color:var(--text2); font-size:14px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .2s; }
+  .btn-ghost:hover { border-color:var(--navy); color:var(--text); }
+
+  /* MANAGER */
+  .mgr-layout { display:grid; grid-template-columns:240px minmax(0,1fr); height:calc(100vh - 64px); overflow:hidden; width:100%; }
+  .mgr-sidebar { background:var(--navy); padding:28px 0; height:calc(100vh - 64px); overflow-y:auto; position:relative; }
+  .sidebar-section-label { font-size:10.5px; font-weight:600; text-transform:uppercase; letter-spacing:1.2px; color:rgba(255,255,255,0.3); padding:0 20px 10px; }
+  .sidebar-link { display:flex; align-items:center; gap:12px; padding:12px 20px; color:rgba(255,255,255,0.5); cursor:pointer; transition:all .18s; font-size:14px; font-weight:500; border-left:3px solid transparent; }
+  .sidebar-link svg { width:18px; height:18px; flex-shrink:0; }
+  .sidebar-link:hover { color:rgba(255,255,255,0.85); background:rgba(255,255,255,0.05); }
+  .sidebar-link.active { color:var(--teal); border-left-color:var(--teal); background:rgba(0,201,167,0.08); }
+  .sidebar-divider { height:1px; background:rgba(255,255,255,0.07); margin:16px 20px; }
+  .sidebar-user { padding:14px 16px; display:flex; align-items:center; gap:10px; background:rgba(255,255,255,0.04); margin:20px 16px 0; border-radius:var(--radius-sm); }
+  .sidebar-avatar { width:34px; height:34px; border-radius:50%; background:rgba(0,201,167,0.2); display:flex; align-items:center; justify-content:center; color:var(--teal); font-size:13px; font-weight:600; }
+  .sidebar-user-info p { font-size:13px; color:rgba(255,255,255,0.7); font-weight:500; }
+  .sidebar-user-info span { font-size:11px; color:rgba(255,255,255,0.35); }
+  .logout-btn { margin-left:auto; background:none; border:none; cursor:pointer; color:rgba(255,255,255,0.3); display:flex; align-items:center; padding:4px; border-radius:6px; transition:color .15s; }
+  .logout-btn:hover { color:var(--coral); }
+  .logout-btn svg { width:16px; height:16px; }
+  .mgr-content { padding:36px 40px; background:var(--off); overflow-y:auto; overflow-x:hidden; height:calc(100vh - 64px); box-sizing:border-box; }
+  #analytics-body { width:100%; }
+  #analytics-body > div { width:100%; box-sizing:border-box; }
+  #stats-row { width:100%; }
+  #recent-responses-table table { width:100%; }
+  .mgr-subtab .table-card { width:100%; }
+  .mgr-subtab .add-q-form { width:100%; }
+  .mgr-subtab .stats-row { width:100%; }
+  .mgr-subtab { display:none; width:100%; box-sizing:border-box; }
+  .mgr-subtab.active { display:block; width:100%; box-sizing:border-box; }
+  .page-header { margin-bottom:28px; }
+  .page-header h1 { font-family:'DM Serif Display',serif; font-size:28px; margin-bottom:5px; }
+  .page-header p { color:var(--text2); font-size:14.5px; }
+  .stats-row { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin-bottom:28px; }
+  .stat-box { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:20px 22px; box-shadow:var(--shadow-sm); position:relative; overflow:hidden; }
+  .stat-box::after { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--teal); border-radius:3px 3px 0 0; }
+  .stat-box.coral::after { background:var(--coral); }
+  .stat-box.amber::after { background:var(--amber); }
+  .stat-box.navy::after { background:var(--navy2); }
+  .stat-label { font-size:12px; font-weight:500; text-transform:uppercase; letter-spacing:.6px; color:var(--muted); margin-bottom:8px; }
+  .stat-value { font-size:30px; font-weight:600; color:var(--text); line-height:1; }
+  .table-card { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); box-shadow:var(--shadow-sm); overflow:visible; margin-bottom:22px; width:100%; }
+  .table-header { padding:18px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
+  .table-header h3 { font-size:15px; font-weight:600; }
+  .btn-primary { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; background:var(--navy); color:#fff; border:none; border-radius:var(--radius-sm); font-size:13.5px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .18s; }
+  .btn-primary:hover { background:var(--navy2); }
+  .btn-primary svg { width:16px; height:16px; }
+  .btn-teal { display:inline-flex; align-items:center; gap:7px; padding:9px 18px; background:var(--teal); color:#fff; border:none; border-radius:var(--radius-sm); font-size:13.5px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .18s; }
+  .btn-teal:hover { background:var(--teal2); }
+  .btn-outline { display:inline-flex; align-items:center; gap:7px; padding:8px 16px; background:transparent; color:var(--text2); border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-weight:500; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all .18s; }
+  .btn-outline:hover { border-color:var(--navy); color:var(--text); }
+  .btn-outline svg { width:14px; height:14px; }
+  .btn-danger-sm { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; background:#fff5f5; border:1px solid #fed7d7; border-radius:6px; cursor:pointer; color:var(--coral); transition:all .15s; }
+  .btn-danger-sm:hover { background:var(--coral); color:#fff; border-color:var(--coral); }
+  .btn-danger-sm svg { width:14px; height:14px; }
+  table { width:100%; border-collapse:collapse; table-layout:fixed; }
+  thead tr { background:#f9fafc; }
+  th { padding:11px 16px; text-align:left; font-size:11.5px; font-weight:600; text-transform:uppercase; letter-spacing:.5px; color:var(--muted); border-bottom:1px solid var(--border); white-space:nowrap; }
+  td { padding:12px 16px; font-size:13.5px; color:var(--text2); border-bottom:1px solid #f1f5f9; vertical-align:middle; }
+  tr:last-child td { border-bottom:none; }
+  tr:hover td { background:#fafbfd; }
+  .col-name  { width:120px; }
+  .col-dept  { width:120px; }
+  .col-ts    { width:145px; }
+  .col-time  { width:65px; }
+  .col-done  { width:60px; }
+  .col-ans   { width:auto; }
+  .tag { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:500; white-space:nowrap; }
+  .tag-teal { background:rgba(0,201,167,0.1); color:var(--teal2); }
+  .tag-navy { background:rgba(13,27,42,0.08); color:var(--navy2); }
+  .tag-amber { background:rgba(255,193,69,0.15); color:#a07800; }
+  .q-list-item { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; transition:background .15s; cursor:default; }
+  .q-list-item.dragging { opacity:.4; background:var(--off); }
+  .q-list-item.drag-over { border-top:2px solid var(--teal); }
+  .drag-handle { cursor:grab; color:var(--muted); display:flex; align-items:center; padding:4px; border-radius:4px; transition:color .15s; flex-shrink:0; }
+  .drag-handle:hover { color:var(--teal); }
+  .drag-handle svg { width:16px; height:16px; pointer-events:none; }
+  .drag-handle:active { cursor:grabbing; }
+  .q-list-item:hover { background:#fafbfd; }
+  .q-list-item:last-child { border-bottom:none; }
+  .q-idx { width:28px; height:28px; flex-shrink:0; background:var(--navy); color:#fff; border-radius:7px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:600; }
+  .q-list-text { flex:1; }
+  .q-list-text p { font-size:14.5px; font-weight:500; color:var(--text); margin-bottom:3px; }
+  .q-list-text span { font-size:12px; color:var(--muted); }
+  .add-q-form { background:var(--white); border:1.5px solid var(--teal); border-radius:var(--radius); padding:24px; margin-bottom:18px; box-shadow:0 0 0 4px rgba(0,201,167,0.08); display:none; width:100%; }
+  .add-q-form.open { display:block; }
+  .add-q-form h3 { font-size:15px; font-weight:600; margin-bottom:18px; }
+  .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px; }
+  .option-input-row { display:flex; gap:8px; margin-bottom:8px; }
+  .option-input-row input { flex:1; }
+  .form-actions { display:flex; gap:10px; margin-top:18px; }
+  .bar-chart-item { margin-bottom:14px; }
+  .bar-label-row { display:flex; justify-content:space-between; margin-bottom:5px; }
+  .bar-label-row span:first-child { font-size:13.5px; font-weight:500; color:var(--text); }
+  .bar-label-row span:last-child { font-size:13px; color:var(--muted); }
+  .bar-track { height:10px; background:var(--off); border-radius:10px; overflow:hidden; }
+  .bar-fill { height:100%; background:linear-gradient(90deg,var(--teal),var(--teal2)); border-radius:10px; transition:width .6s ease; }
+  .dept-chip { display:inline-flex; align-items:center; padding:4px 11px; background:rgba(13,27,42,0.07); color:var(--navy2); border-radius:20px; font-size:12px; font-weight:500; }
+  .login-page { flex:1; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg,var(--navy) 0%,#1a3048 60%,var(--off) 100%); overflow-y:auto; }
+  .login-card { background:var(--white); border-radius:20px; padding:44px 48px; width:420px; box-shadow:0 24px 60px rgba(0,0,0,0.2); }
+  .login-logo { width:60px; height:60px; background:var(--navy); border-radius:16px; display:flex; align-items:center; justify-content:center; margin-bottom:24px; }
+  .login-logo svg { width:30px; height:30px; }
+  .login-card h2 { font-family:'DM Serif Display',serif; font-size:26px; margin-bottom:6px; }
+  .login-card p { color:var(--text2); font-size:14.5px; margin-bottom:28px; line-height:1.5; }
+  .login-hint { margin-top:16px; text-align:center; font-size:12.5px; color:var(--muted); }
+  .login-hint code { background:var(--off); padding:2px 7px; border-radius:4px; font-family:monospace; }
+  .login-error { display:none; padding:10px 14px; background:#fff5f5; border:1px solid #fed7d7; color:#c53030; border-radius:var(--radius-sm); font-size:13px; margin-bottom:14px; }
+  .login-error.show { display:block; }
+  .setup-step { display:flex; gap:16px; margin-bottom:20px; }
+  .step-num { width:32px; height:32px; flex-shrink:0; background:var(--navy); color:#fff; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:600; margin-top:2px; }
+  .step-body h4 { font-size:14.5px; font-weight:600; margin-bottom:4px; }
+  .step-body p { font-size:13.5px; color:var(--text2); line-height:1.6; }
+  .step-body a { color:var(--teal2); }
+  .code-block { background:#1a2332; color:#a8d5c2; border-radius:var(--radius-sm); padding:18px 20px; font-family:'Courier New',monospace; font-size:12px; line-height:1.8; overflow-x:auto; white-space:pre; margin-top:12px; }
+  .copy-code-btn { display:inline-flex; align-items:center; gap:6px; margin-top:10px; padding:7px 14px; background:transparent; border:1px solid var(--border); border-radius:6px; font-size:12.5px; cursor:pointer; color:var(--text2); font-family:'DM Sans',sans-serif; transition:all .15s; }
+  .copy-code-btn:hover { border-color:var(--navy); color:var(--text); }
+  .copy-code-btn svg { width:13px; height:13px; }
+  .empty-state { text-align:center; padding:60px 30px; color:var(--muted); }
+  .empty-state svg { width:48px; height:48px; margin:0 auto 14px; display:block; opacity:.35; }
+  .empty-state p { font-size:14.5px; }
+  .filter-row { display:flex; gap:10px; flex-wrap:wrap; padding:16px 24px 0; }
+  .filter-row select { padding:8px 12px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--white); outline:none; }
+  .filter-row select:focus { border-color:var(--teal); }
+  .ans-pill { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; background:var(--off); border:1px solid var(--border); font-size:11.5px; color:var(--text2); margin:2px; position:relative; cursor:default; }
+  .ans-pill b { color:var(--text); margin-left:3px; }
+  .ans-pill .q-tooltip { display:none; }
+  .ans-pill:hover .q-tooltip { display:none; }
+  #floating-tooltip { display:none; position:fixed; background:var(--navy); color:#fff; font-size:12px; padding:6px 12px; border-radius:7px; max-width:220px; z-index:9999; line-height:1.5; pointer-events:none; box-shadow:0 4px 14px rgba(0,0,0,0.28); text-align:center; }
+  #floating-tooltip::after { content:""; position:absolute; top:100%; left:50%; transform:translateX(-50%); border:5px solid transparent; border-top-color:var(--navy); }
+  .completion-badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; margin-left:6px; }
+  .c100 { background:rgba(0,201,167,0.12); color:var(--teal2); }
+  .cmid { background:rgba(255,193,69,0.15); color:#9a7000; }
+  .clow { background:rgba(255,107,107,0.12); color:var(--coral); }
+  .search-wrap { position:relative; display:inline-flex; align-items:center; }
+  .search-wrap svg { position:absolute; left:10px; width:14px; height:14px; color:var(--muted); pointer-events:none; }
+  .search-input { padding:8px 12px 8px 34px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:13.5px; font-family:"DM Sans",sans-serif; color:var(--text); background:var(--white); outline:none; width:190px; transition:border-color .15s; }
+  .search-input:focus { border-color:var(--teal); }
+  .dup-screen { text-align:center; padding:48px 40px; background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow-sm); border:1px solid var(--border); }
+  .dup-icon { width:68px; height:68px; background:rgba(255,193,69,0.14); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 18px; }
+  .dup-icon svg { width:30px; height:30px; color:var(--amber); }
+  .dup-screen h2 { font-family:"DM Serif Display",serif; font-size:23px; margin-bottom:9px; }
+  .dup-screen p { color:var(--text2); font-size:14px; line-height:1.6; margin-bottom:22px; }
+  .dup-btns { display:flex; gap:10px; justify-content:center; flex-wrap:wrap; }
+  .connected-chip { display:none; margin-left:auto; }
+  .connected-chip span { display:inline-flex; align-items:center; gap:6px; padding:6px 14px; background:#f0fdf4; border:1px solid #bbf7d0; color:#166534; border-radius:20px; font-size:12.5px; font-weight:500; }
+  /* FOLLOW-UP + CHAR COUNTER */
+  .followup-box { margin-top:10px; padding:12px 14px; background:rgba(255,193,69,0.06); border:1.5px solid rgba(255,193,69,0.3); border-radius:var(--radius-sm); animation:fadeIn .2s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:none} }
+  .followup-label { font-size:12.5px; font-weight:500; color:#92400e; margin-bottom:7px; display:flex; align-items:center; gap:5px; }
+  .followup-textarea { width:100%; padding:9px 12px; border:1.5px solid rgba(255,193,69,0.4); border-radius:var(--radius-sm); font-size:13.5px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--white); resize:vertical; outline:none; min-height:70px; transition:border-color .15s; }
+  .followup-textarea:focus { border-color:var(--amber); }
+  .char-counter { font-size:11.5px; margin-top:5px; text-align:right; }
+  .char-counter.below { color:var(--coral); }
+  .char-counter.met   { color:var(--teal2); font-weight:500; }
+  /* TOAST */
+  #toast-container { position:fixed; bottom:24px; right:24px; z-index:9999; display:flex; flex-direction:column; gap:8px; pointer-events:none; }
+  .toast { display:flex; align-items:center; gap:10px; padding:12px 18px; border-radius:var(--radius-sm); font-size:13.5px; font-weight:500; box-shadow:0 4px 16px rgba(0,0,0,0.15); pointer-events:all; animation:toastIn .25s ease; min-width:220px; }
+  @keyframes toastIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:none} }
+  .toast.success { background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+  .toast.error   { background:#fff5f5; color:#c53030; border:1px solid #fed7d7; }
+  .toast.info    { background:#eff6ff; color:#1d4ed8; border:1px solid #bfdbfe; }
+  .toast.warning { background:#fffbeb; color:#92400e; border:1px solid #fde68a; }
+  .toast svg     { width:16px; height:16px; flex-shrink:0; }
+  /* LOADING OVERLAY */
+  .loading-bar { position:fixed; top:0; left:0; right:0; height:3px; background:linear-gradient(90deg,var(--teal),var(--teal2)); z-index:9998; animation:loadBar 1.2s ease-in-out infinite; display:none; }
+  @keyframes loadBar { 0%{width:0;opacity:1} 70%{width:85%;opacity:1} 100%{width:100%;opacity:0} }
+  /* SYNC INDICATOR */
+  .sync-indicator { display:none; align-items:center; gap:6px; font-size:12px; color:var(--muted); }
+  .sync-indicator.show { display:flex; }
+  .sync-dot { width:7px; height:7px; border-radius:50%; background:var(--teal); animation:pulse .8s ease-in-out infinite alternate; }
+  @keyframes pulse { from{opacity:.3} to{opacity:1} }
+  /* MODAL */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(13,27,42,0.55); z-index:1000; align-items:center; justify-content:center; backdrop-filter:blur(3px); }
+  .modal-overlay.open { display:flex; }
+  .modal-box { background:var(--white); border-radius:20px; padding:32px 36px; width:440px; max-width:90vw; box-shadow:0 24px 60px rgba(0,0,0,0.22); animation:modalIn .18s ease; }
+  @keyframes modalIn { from{opacity:0;transform:translateY(-12px) scale(.97)} to{opacity:1;transform:none} }
+  .modal-title { font-family:"DM Serif Display",serif; font-size:22px; margin-bottom:6px; color:var(--text); }
+  .modal-subtitle { font-size:14px; color:var(--text2); margin-bottom:22px; line-height:1.5; }
+  .modal-input { width:100%; padding:11px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:15px; font-family:"DM Sans",sans-serif; color:var(--text); background:var(--off); outline:none; transition:border-color .15s; }
+  .modal-input:focus { border-color:var(--teal); background:#fff; }
+  .modal-actions { display:flex; gap:10px; margin-top:20px; justify-content:flex-end; }
+  @media print {
+    /* Hide everything except responses content */
+    .topbar,.mgr-sidebar,.page-header p,.filter-row,
+    #load-btn,#load-msg,#view-btn-table,#view-btn-detail,
+    .btn-outline,.btn-primary,.btn-teal,.btn-danger-sm,
+    #disconnect-banner,#toast-container,#floating-tooltip,
+    .loading-bar,.modal-overlay { display:none !important; }
+    /* Print header */
+    body::before {
+      content: "AI Session Feedback Tracker";
+      display:block; font-family:"DM Serif Display",serif;
+      font-size:22px; font-weight:700; margin-bottom:4px; color:#0d1b2a;
+    }
+    body::after {
+      content: "Printed on " attr(data-print-date);
+      display:block; font-size:11px; color:#8a9bb0; margin-bottom:20px;
+    }
+    body { background:#fff; font-size:12px; color:#1a2332; }
+    .mgr-layout { display:block; }
+    .mgr-content { padding:0; height:auto; overflow:visible; }
+    .mgr-subtab { display:none !important; }
+    #tab-responses { display:block !important; }
+    .table-card { box-shadow:none; border:1px solid #ddd; margin-bottom:12px; page-break-inside:avoid; }
+    .table-header { padding:10px 16px; border-bottom:2px solid #0d1b2a; }
+    .table-header h3 { font-size:14px; font-weight:700; }
+    th { background:#f4f6f9 !important; font-size:10px; padding:8px 12px; }
+    td { font-size:11px; padding:8px 12px; border-bottom:1px solid #e2e8f0; }
+    .ans-pill { font-size:10px; padding:2px 6px; border:1px solid #ddd; }
+    .ans-pill .q-tooltip { display:none !important; }
+    .dept-chip { font-size:10px; padding:2px 6px; background:#f0fdf4; border:1px solid #bbf7d0; }
+    .completion-badge { font-size:10px; padding:2px 6px; }
+    tr { page-break-inside:avoid; }
+    .page-header h1 { font-size:20px; margin-bottom:4px; }
+    @page { margin:15mm; }
+  }
+  @media(max-width:768px){
+    .field-row{grid-template-columns:1fr}
+    .stats-row{grid-template-columns:1fr 1fr}
+    .topbar{padding:0 14px;height:56px}
+    .brand-name{font-size:14px}
+    .nav-tab{padding:6px 12px;font-size:12px}
+    .nav-tab svg{display:none}
+    .emp-layout{margin:16px auto;padding:0 12px 60px}
+    .session-hero{padding:20px 18px;gap:12px}
+    .hero-text h2{font-size:17px}
+    .hero-badge{display:none}
+    .form-card{padding:18px 16px}
+    .question-card{padding:18px 16px}
+      .submit-btn{font-size:14px;padding:13px}
+    /* Manager mobile - bottom nav */
+    #panel-manager.active{height:calc(100vh - 56px)}
+    .mgr-layout{grid-template-columns:1fr;height:100%;display:flex;flex-direction:column}
+    .mgr-sidebar{
+      order:2;height:auto;overflow-x:auto;overflow-y:hidden;
+      display:flex;flex-direction:row;padding:0;
+      border-top:1px solid rgba(255,255,255,0.1);
+      background:var(--navy);flex-shrink:0;
+    }
+    .mgr-content{order:1;flex:1;overflow-y:auto;padding:16px;height:0}
+    .sidebar-section-label{display:none}
+    .sidebar-divider{display:none}
+    .sidebar-user{display:none}
+    .sync-indicator{display:none !important}
+    #sync-ok{display:none !important}
+    .sidebar-link{
+      flex-direction:column;gap:3px;padding:10px 14px;
+      border-left:none;border-top:3px solid transparent;
+      font-size:10px;font-weight:500;white-space:nowrap;
+      flex-shrink:0;align-items:center;min-width:64px;
+    }
+    .sidebar-link svg{width:20px;height:20px}
+    .sidebar-link.active{border-top-color:var(--teal);border-left-color:transparent;background:rgba(0,201,167,0.08)}
+    .page-header h1{font-size:22px}
+    .table-card{overflow-x:auto}
+    table{min-width:500px}
+    .mgr-content > *{max-width:100%}
+    .modal-box{padding:24px 20px}
+    .stats-row{grid-template-columns:1fr 1fr;gap:10px}
+    .login-card{padding:32px 24px;width:calc(100vw - 32px)}
+  }
+  @media(max-width:420px){
+    .stats-row{grid-template-columns:1fr 1fr}
+    .nav-tab span,.nav-tab-text{display:none}
+    .sidebar-link{padding:10px 10px;min-width:52px}
+    .form-card{padding:16px 14px}
+  }
+</style>
+</head>
+<body>
+
+<div id="floating-tooltip"></div>
+<div id="toast-container"></div>
+<div class="loading-bar" id="loading-bar"></div>
+<div class="topbar">
+  <div class="brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+    <span class="brand-name">AI Session <span>Feedback Tracker</span></span>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="switchMain('employee')" id="tab-emp">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Team Member
+    </button>
+    <button class="nav-tab" onclick="switchMain('manager')" id="tab-mgr">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>Admin
+    </button>
+  </div>
+</div>
+
+<!-- SHEET DISCONNECT BANNER -->
+<div id="disconnect-banner" style="display:none;background:#fff5f5;border-bottom:1px solid #fed7d7;padding:8px 32px;font-size:13px;color:#c53030;display:none;align-items:center;gap:10px">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+  <span>⚠ Google Sheet disconnected - data may not be saving. Check your connection or update the URL in Google Sheets settings.</span>
+  <button onclick="document.getElementById('disconnect-banner').style.display='none'" style="margin-left:auto;background:none;border:none;cursor:pointer;color:#c53030;font-size:16px;padding:0 4px">✕</button>
+</div>
+
+<!-- EMPLOYEE -->
+<div id="panel-employee" class="panel active">
+  <div class="emp-layout">
+    <div class="session-hero">
+      <div class="hero-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/></svg></div>
+      <div class="hero-text">
+        <h2 id="session-name-display">AI &amp; Automation Session</h2>
+        <p id="session-meta-display">Share your honest feedback</p>
+      </div>
+      <div class="hero-badge" id="q-count-badge">5 Questions</div>
+    </div>
+    <div id="emp-body">
+      <div class="form-card">
+        <div class="form-card-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Your Details
+        </div>
+        <div class="field-row">
+          <div class="field-group">
+            <label>Full Name <span class="req">*</span></label>
+            <input type="text" class="field-input" id="emp-name" placeholder="Enter your full name">
+          </div>
+          <div class="field-group">
+            <label>Department <span class="req">*</span></label>
+            <select class="field-input" id="emp-dept" onchange="renderEmpQuestions()"><option value="">- Select your department -</option></select>
+          </div>
+        </div>
+      </div>
+      <div id="questions-container"></div>
+      <div class="alert-msg error" id="emp-alert">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        <span id="emp-alert-text"></span>
+      </div>
+      <button class="submit-btn" id="submit-btn" onclick="submitFeedback()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Submit Feedback
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MANAGER -->
+<div id="panel-manager" class="panel">
+  <div id="mgr-login" class="login-page">
+    <div class="login-card">
+      <div class="login-logo"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+      <h2>Admin Login</h2>
+      <p>Access the dashboard to manage questions, sessions, and view all team member responses.</p>
+      <div class="login-error" id="login-error">Incorrect password. Please try again.</div>
+      <div class="field-group" style="margin-bottom:16px">
+        <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Password</label>
+        <input type="password" class="field-input" id="mgr-pass" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <button class="submit-btn" onclick="doLogin()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="21" y1="12" x2="3" y2="12"/></svg>Login
+      </button>
+      <div class="login-hint">Default password: <code>********</code></div>
+    </div>
+  </div>
+
+  <div id="mgr-dashboard" style="display:none;flex:1;overflow:hidden;width:100%">
+    <div class="mgr-layout">
+      <div class="mgr-sidebar">
+        <div class="sidebar-section-label">Dashboard</div>
+        <div class="sidebar-link active" onclick="showTab('overview')" id="sl-overview"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>Overview</div>
+        <div class="sidebar-link" onclick="showTab('sessions')" id="sl-sessions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Sessions</div>
+        <div class="sidebar-link" onclick="showTab('questions')" id="sl-questions"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Questions</div>
+        <div class="sidebar-link" onclick="showTab('responses')" id="sl-responses"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>Responses</div>
+        <div class="sidebar-link" onclick="showTab('analytics')" id="sl-analytics"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</div>
+        <div class="sidebar-divider"></div>
+        <!-- <div class="sidebar-section-label">Setup</div> -->
+        <div class="sidebar-link" onclick="showTab('sheets')" id="sl-sheets" style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>Google Sheets</div>
+        <div class="sidebar-divider"></div>
+        <div style="padding:8px 16px;margin:0 0 4px">
+          <div class="sync-indicator" id="sync-indicator">
+            <div class="sync-dot"></div>
+            <span style="font-size:11px;color:rgba(255,255,255,0.4)">Syncing...</span>
+          </div>
+          <div id="sync-ok" style="display:none;font-size:11px;color:rgba(0,201,167,0.6);padding:2px 0">✓ Sheet synced</div>
+        </div>
+        <div class="sidebar-user">
+          <div class="sidebar-avatar">A</div>
+          <div class="sidebar-user-info"><p>Admin</p><span>Administrator</span></div>
+          <button class="logout-btn" onclick="doLogout()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+        </div>
+      </div>
+
+      <div class="mgr-content">
+        <!-- OVERVIEW -->
+        <div class="mgr-subtab active" id="tab-overview">
+          <div class="page-header"><h1>Overview</h1><p>Feedback summary - <span id="ov-session-name"></span></p></div>
+          <div class="stats-row" id="stats-row"></div>
+          <div class="table-card" style="padding:20px 24px;margin-bottom:20px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+              <h3 style="font-size:15px;font-weight:600">Response Count by Department</h3>
+              <span style="font-size:12px;color:var(--muted)" id="dept-responded-count"></span>
+            </div>
+            <div id="dept-response-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:10px"></div>
+          </div>
+          <div class="table-card">
+            <div class="table-header"><h3>Recent Responses</h3><button class="btn-outline" onclick="showTab('responses')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>View All</button></div>
+            <div id="recent-responses-table"></div>
+          </div>
+        </div>
+
+        <!-- QUESTIONS -->
+        <div class="mgr-subtab" id="tab-questions">
+          <div class="page-header"><h1>Questions</h1><p>Manage feedback questions shown to employees</p></div>
+          <div class="add-q-form" id="add-q-form">
+            <h3>Add New Question</h3>
+            <div class="form-grid">
+              <div class="field-group" style="grid-column:1/-1"><label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Question Text</label><input type="text" class="field-input" id="nq-text" placeholder="e.g. How would you rate the session content?"></div>
+              <div class="field-group"><label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Question Type</label><select class="field-input" id="nq-type" onchange="toggleOptions()"><option value="mcq">Multiple Choice (MCQ)</option><option value="rating">Rating (1–5)</option><option value="yesno">Yes / No / Maybe</option><option value="text">Text Field (open-ended)</option></select></div>
+              <div class="field-group">
+                <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Required</label>
+                <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden">
+                  <button type="button" id="req-yes" onclick="setRequired(true)" style="flex:1;padding:10px;border:none;background:var(--navy);color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">★ Compulsory</button>
+                  <button type="button" id="req-no"  onclick="setRequired(false)" style="flex:1;padding:10px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">Optional</button>
+                </div>
+              </div>
+              <div class="field-group" style="grid-column:1/-1">
+                <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Show to Departments <span style="font-weight:400;color:var(--muted)">(leave all unselected = show to everyone)</span></label>
+                <div id="dept-tags-wrap" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:var(--off);border:1.5px solid var(--border);border-radius:var(--radius-sm)">
+                </div>
+              </div>
+            </div>
+            <div id="options-section">
+              <label style="font-size:13px;font-weight:500;color:var(--text2);display:block;margin-bottom:8px">Answer Options</label>
+              <div id="options-list">
+                <div class="option-input-row"><input type="text" class="field-input" placeholder="Option 1"><button class="btn-danger-sm" onclick="removeOpt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+                <div class="option-input-row"><input type="text" class="field-input" placeholder="Option 2"><button class="btn-danger-sm" onclick="removeOpt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+              </div>
+              <button class="btn-outline" style="margin-top:8px" onclick="addOpt()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Option</button>
+            </div>
+            <!-- TRIGGER SECTION — shown for MCQ/Rating/YesNo -->
+            <div id="nq-trigger-section" style="display:none;margin-top:14px">
+              <label style="font-size:13px;font-weight:500;color:var(--text2);display:block;margin-bottom:7px">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13" style="vertical-align:-2px;margin-right:4px"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                Ask "Why?" follow-up when this option is selected:
+              </label>
+              <div id="nq-trigger-list" style="display:flex;flex-wrap:wrap;gap:8px;padding:10px;background:rgba(255,193,69,0.06);border:1.5px solid rgba(255,193,69,0.25);border-radius:var(--radius-sm);min-height:42px">
+                <span style="font-size:12px;color:var(--muted);align-self:center">Select question type first to see options</span>
+              </div>
+            </div>
+            <!-- MIN CHARS SECTION — shown for Text type only -->
+            <div id="nq-minchars-section" style="display:none;margin-top:14px">
+              <label style="font-size:13px;font-weight:500;color:var(--text2);display:block;margin-bottom:7px">Minimum characters required <span style="font-weight:400;color:var(--muted)">(0 = no minimum, default 30)</span></label>
+              <input type="number" class="field-input" id="nq-minchars" min="0" max="500" value="30" style="width:130px">
+            </div>
+            <div class="form-actions">
+              <button class="btn-teal" onclick="saveQuestion()">Save Question</button>
+              <button class="btn-outline" onclick="document.getElementById('add-q-form').classList.remove('open')">Cancel</button>
+            </div>
+          </div>
+          <div class="table-card">
+            <div class="table-header">
+              <h3>All Questions (<span id="q-count">0</span>)</h3>
+              <div style="display:flex;gap:8px;align-items:center">
+                <button id="show-hidden-btn" onclick="toggleShowHidden()" style="display:none;padding:7px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:12.5px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;display:flex;align-items:center;gap:6px">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  <span id="show-hidden-label">Show Hidden</span>
+                </button>
+                <button class="btn-primary" onclick="document.getElementById('add-q-form').classList.toggle('open');initAddForm()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Question</button>
+              </div>
+            </div>
+            <div id="q-list-body"></div>
+          </div>
+        </div>
+
+        <!-- RESPONSES -->
+        <div class="mgr-subtab" id="tab-responses">
+          <div class="page-header"><h1>Responses</h1><p>All employee submissions - filter by department to see full answers</p></div>
+
+          <!-- View toggle + filters -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+            <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;background:var(--white)">
+              <button id="view-btn-table" onclick="setView('table')" style="padding:8px 18px;border:none;background:var(--navy);color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">
+                List View
+              </button>
+              <button id="view-btn-detail" onclick="setView('detail')" style="padding:8px 18px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;">
+                Detail View
+              </button>
+            </div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap">
+              <select id="f-session" onchange="renderResponsesTable()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none"><option value="">All sessions</option></select>
+              <select id="f-dept" onchange="renderResponsesTable()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none"><option value="">All departments</option></select>
+              <div class="search-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg><input type="text" class="search-input" id="f-search" placeholder="Search name..." oninput="renderResponsesTable()"></div>
+              <button class="btn-outline" onclick="exportCSV()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Export CSV</button>
+              <button class="btn-outline" onclick="printResponses()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>
+            </div>
+          </div>
+
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px"><button id="load-btn" class="btn-outline" onclick="loadResponsesFromSheet()" style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>↻ Refresh from Sheet</button><span id="load-msg" style="font-size:13px;color:#166534"></span></div><div id="responses-table"></div>
+        </div>
+
+        <!-- ANALYTICS -->
+        <div class="mgr-subtab" id="tab-analytics">
+          <div class="page-header"><h1>Analytics</h1><p>Visual breakdown of responses - filter by session or department</p></div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px">
+            <select id="an-session" onchange="renderAnalyticsTab()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none">
+              <option value="">All sessions</option>
+            </select>
+            <select id="an-dept" onchange="renderAnalyticsTab()" style="padding:8px 12px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:13.5px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--white);outline:none">
+              <option value="">All departments</option>
+            </select>
+          </div>
+          <div id="analytics-body"></div>
+        </div>
+
+        <!-- SESSIONS -->
+        <div class="mgr-subtab" id="tab-sessions">
+          <div class="page-header"><h1>Sessions</h1><p>Manage sessions - multiple sessions can be active simultaneously for different departments</p></div>
+          <div class="table-card">
+            <div class="table-header"><h3>All Sessions</h3><button class="btn-primary" onclick="addSession()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New Session</button></div>
+            <div id="sessions-table"></div>
+          </div>
+        </div>
+
+        <!-- GOOGLE SHEETS -->
+        <div class="mgr-subtab" id="tab-sheets">
+          <div class="page-header"><h1>Google Sheets Integration</h1><p>Connect your Google Sheet to sync all responses automatically</p></div>
+          <div class="table-card" style="padding:32px 36px;max-width:600px">
+            <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px">
+              <div style="width:44px;height:44px;background:#e8f5e9;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" fill="none" stroke="#2e7d32" stroke-width="2" width="22" height="22"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+              <div style="flex:1">
+                <h3 style="font-size:16px;font-weight:600;color:var(--text)">AI Session Feedback Tracker</h3>
+                <p style="font-size:13px;color:var(--text2);margin-top:2px">Responses, Sessions and Questions sync automatically</p>
+              </div>
+              <div class="connected-chip" id="connected-chip"><span>✓ Connected</span></div>
+            </div>
+            <div style="margin-bottom:8px">
+              <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:8px">Google Apps Script Web App URL</label>
+              <div style="display:flex;gap:10px">
+                <input type="text" class="field-input" id="sheets-url" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1">
+                <button class="btn-teal" onclick="connectSheets()">Connect</button>
+              </div>
+            </div>
+            <div id="sheets-msg" style="margin-top:10px;font-size:13px;min-height:20px"></div>
+          </div>
+        </div>        </div>
+
+      </div><!-- /mgr-content -->
+    </div><!-- /mgr-layout -->
+  </div><!-- /mgr-dashboard -->
+</div><!-- /panel-manager -->
+
+<script>
+const DEPARTMENTS = ["Android Developer","Content & ASO","Designer","HR","iOS Developer","Level Creation","Network","Testing","Unity Developer","Kids Games",".Net"];
+const PASS_HASH       = "d8f793bd32eaa37200c927f55540e5aa6230c521f7360e0e8833df2b4c934b99";
+const SUPER_PASS_HASH = "c7cac0395a22ef772ccf3fc8644117d84c449a476d7f81629bd2abea9195438f";
+
+async function hashPassword(str) {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
+}
+
+// ─────────────────────────────────────────────
+//  APPS SCRIPT  (paste this into Google Apps Script)
+// ─────────────────────────────────────────────
+//  APPS SCRIPT  (paste this into Google Apps Script)
+// ─────────────────────────────────────────────
+
+
+// ─────────────────────────────────────────────
+//  APP STATE
+// ─────────────────────────────────────────────
+let app = {
+  loggedIn:     false,
+  isSuperAdmin: false,
+  activeTab:    'overview',
+  questions: [], // loaded from Google Sheet on admin login
+  responses:     [],
+  sessions:      [], // loaded from Google Sheet on login
+  activeSession: "",
+  sheetsUrl:     "https://script.google.com/macros/s/AKfycbxNUdbQg--tcd1OrKl7JpLuu-yhETc7sgXBwT-Jwnt6C9LIAUxHeCDwwMqKt87vq3ffTw/exec",
+  nextId:        7 // updated from sheet on load
+};
+let empAnswers   = {};
+let empFollowups = {}; // stores follow-up answers keyed by question id
+
+function updateCharCounter(qid, val, minC) {
+  const el = document.getElementById('cc-'+qid);
+  if (!el || minC <= 0) return;
+  const len = val.length;
+  el.textContent = len + ' / ' + minC + ' minimum characters';
+  el.className = 'char-counter ' + (len >= minC ? 'met' : 'below');
+}
+
+function updateFollowupCounter(qid, val) {
+  const el = document.getElementById('fucc-'+qid);
+  if (!el) return;
+  const len = val.length;
+  el.textContent = len + ' / 20 minimum characters';
+  el.className = 'char-counter ' + (len >= 20 ? 'met' : 'below');
+}
+
+function checkFollowupTrigger(qid, val, type) {
+  const q = app.questions.find(x=>x.id===qid);
+  if (!q) return;
+  const triggers = Array.isArray(q.triggers) ? q.triggers.map(String) : (q.triggers ? String(q.triggers).split(',').map(t=>t.trim()) : []);
+  if (!triggers.length) return;
+  const box = document.getElementById('followup-'+qid);
+  if (!box) return;
+  const strVal = String(val);
+  const shouldShow = triggers.includes(strVal);
+  box.style.display = shouldShow ? 'block' : 'none';
+  if (!shouldShow) {
+    const ta = document.getElementById('fu-'+qid);
+    if (ta) ta.value = '';
+    delete empFollowups[qid];
+    const cc = document.getElementById('fucc-'+qid);
+    if (cc) { cc.textContent = '0 / 20 minimum characters'; cc.className = 'char-counter below'; }
+  }
+}
+let formStartTime = null;
+
+// ─────────────────────────────────────────────
+//  NAV
+// ─────────────────────────────────────────────
+function switchMain(to) {
+  document.getElementById('panel-employee').classList.toggle('active', to==='employee');
+  document.getElementById('panel-manager').classList.toggle('active', to==='manager');
+  document.getElementById('tab-emp').classList.toggle('active', to==='employee');
+  document.getElementById('tab-mgr').classList.toggle('active', to==='manager');
+  if (to==='employee') renderEmployee();
+  if (to==='manager')  app.loggedIn ? renderDashboard() : showLogin();
+}
+
+// ─────────────────────────────────────────────
+//  EMPLOYEE
+// ─────────────────────────────────────────────
+function getActiveSessionForDept(dept) {
+  const isOpen = s => s.active && s.status !== 'closed';
+  if (!dept) return app.sessions.find(isOpen) || null;
+  const specific = app.sessions.find(s => isOpen(s) && s.depts && s.depts.length > 0 && s.depts.includes(dept));
+  if (specific) return specific;
+  return app.sessions.find(s => isOpen(s) && (!s.depts || s.depts.length === 0)) || null;
+}
+function isSessionClosed(dept) {
+  // Check if there's a session for this dept but it's closed
+  const anySess = app.sessions.find(s =>
+    s.active &&
+    (!s.depts || s.depts.length === 0 || (s.depts && s.depts.includes(dept)))
+  );
+  return anySess && anySess.status === 'closed';
+}
+
+// ─────────────────────────────────────────────
+//  RATING BUTTON JS HELPERS
+// ─────────────────────────────────────────────
+// applyRatingSelection removed — using querySelectorAll like MCQ
+
+function renderEmployee() {
+  const deptSel = document.getElementById('emp-dept');
+  if (deptSel) deptSel.innerHTML = '<option value="">- Select your department -</option>' + DEPARTMENTS.map(d=>`<option>${d}</option>`).join('');
+  updateEmpHero();
+  empAnswers   = {};
+  empFollowups = {};
+  formStartTime = Date.now();
+  renderEmpQuestions();
+  const al = document.getElementById('emp-alert');
+  if(al) al.classList.remove('show');
+}
+
+function updateEmpHero() {
+  const dept = document.getElementById('emp-dept')?.value || '';
+  const sess = getActiveSessionForDept(dept);
+  const n = document.getElementById('session-name-display');
+  const m = document.getElementById('session-meta-display');
+  const b = document.getElementById('q-count-badge');
+  if(n) n.textContent = !dept ? 'Select your department' : (sess?.name || 'No active session');
+  if(m) m.textContent = !dept ? 'Choose your department below to begin' : (sess ? (sess.date||'') + ' · Share your honest feedback' : 'No active session for your department - contact Admin');
+  const qCount = sess ? app.questions.filter(q=>!q.depts||q.depts.length===0||q.depts.includes(dept)).length : 0;
+  if(b) b.textContent = qCount + ' Questions';
+}
+
+function renderEmpQuestions() {
+  const c = document.getElementById('questions-container');
+  if (!c) return;
+  updateEmpHero();
+  const dept = document.getElementById('emp-dept')?.value || '';
+  const sess = getActiveSessionForDept(dept);
+  // If no active session for this dept, show message
+  if (!sess) {
+    const closed = dept ? isSessionClosed(dept) : false;
+    c.innerHTML = closed
+      ? `<div style="text-align:center;padding:48px 40px;background:var(--white);border-radius:var(--radius);border:1px solid var(--border)">
+          <div style="width:60px;height:60px;background:rgba(255,107,107,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+            <svg viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="2" width="28" height="28"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </div>
+          <p style="font-size:17px;font-weight:600;color:var(--text);margin-bottom:8px">Session Closed</p>
+          <p style="font-size:13.5px;color:var(--text2);line-height:1.6">This session has ended and is no longer accepting responses.<br>Please contact your Admin for more information.</p>
+        </div>`
+      : `<div style="text-align:center;padding:40px;background:var(--white);border-radius:var(--radius);border:1px solid var(--border)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="1.5" width="40" height="40" style="margin:0 auto 12px;display:block"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+          <p style="font-size:15px;font-weight:500;color:var(--text2)">No active session for your department</p>
+          <p style="font-size:13px;color:var(--muted);margin-top:6px">Please contact your Admin to activate a session.</p>
+        </div>`;
+    const sb = document.getElementById('submit-btn');
+    if(sb) sb.style.display = 'none';
+    return;
+  }
+  const sb2 = document.getElementById('submit-btn');
+  if(sb2) sb2.style.display = 'flex';
+  // Filter questions by department tag
+  // If no dept selected yet, show all questions as preview
+  const visibleQs = !dept
+    ? app.questions
+    : app.questions.filter(q => !q.depts || q.depts.length === 0 || q.depts.includes(dept));
+  const badge = document.getElementById('q-count-badge');
+  if(badge) badge.textContent = visibleQs.length + ' Questions';
+  c.innerHTML = visibleQs.map((q,i) => {
+    const reqMark = q.required ? '<span style="color:var(--coral);margin-left:4px;font-size:13px">*</span>' : '<span style="color:var(--muted);margin-left:6px;font-size:11px;font-weight:400">(optional)</span>';
+    let input = '';
+    const rLabels = {1:'Poor',2:'Fair',3:'Good',4:'Great',5:'Excellent'};
+    if (q.type === 'rating') {
+      const rTriggers = Array.isArray(q.triggers) ? q.triggers.map(String) : (q.triggers ? String(q.triggers).split(',').map(t=>t.trim()) : []);
+      input = `<div class="rating-wrap">
+        ${[1,2,3,4,5].map(n=>`<button class="rating-btn" id="rb-${q.id}-${n}" data-val="${n}" onclick="pickRating(this,${q.id},${n})" type="button"><span class="r-num">${n}</span><span class="r-lbl">${rLabels[n]}</span></button>`).join('')}
+      </div>
+      <div id="followup-${q.id}" style="display:none" class="followup-box">
+        <div class="followup-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Could you share why you feel this way?</div>
+        <textarea class="followup-textarea" id="fu-${q.id}" rows="2" placeholder="Your reason (optional, min 20 characters)..."
+          oninput="empFollowups[${q.id}]=this.value;updateFollowupCounter(${q.id},this.value)"></textarea>
+        <div class="char-counter below" id="fucc-${q.id}">0 / 20 minimum characters</div>
+      </div>`;
+    } else if (q.type === 'text') {
+      const minC = parseInt(q.minChars) || 30;
+      const phText = q.required ? `Type your answer here... (min ${minC} characters)` : 'Optional - type your answer here...';
+      input = `<textarea id="ta-${q.id}" rows="3" placeholder="${phText}"
+        oninput="pickAnswer(${q.id},this.value,'text');updateCharCounter(${q.id},this.value,${minC})"
+        style="width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);font-size:14px;font-family:'DM Sans',sans-serif;color:var(--text);background:var(--off);resize:vertical;outline:none;transition:border-color .15s"
+        onfocus="this.style.borderColor='var(--teal)';this.style.background='#fff'"
+        onblur="this.style.borderColor='var(--border)'"></textarea>
+      ${minC > 0 ? `<div class="char-counter below" id="cc-${q.id}">0 / ${minC} minimum characters</div>` : ''}`;
+    } else {
+      const opts = q.type==='yesno' ? ['Yes','No','Maybe'] : q.options;
+      const triggers = Array.isArray(q.triggers) ? q.triggers : (q.triggers ? String(q.triggers).split(',').map(t=>t.trim()) : []);
+      input = `<div class="mcq-options">
+        ${opts.map((o,oi)=>`<button class="mcq-option" id="mo-${q.id}-${oi}" data-val="${o.replace(/"/g,'&quot;')}" onclick="pickAnswer(${q.id},this.dataset.val,'mcq')" type="button">${o}</button>`).join('')}
+      </div>
+      <div id="followup-${q.id}" style="display:none" class="followup-box">
+        <div class="followup-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Could you share why you feel this way?</div>
+        <textarea class="followup-textarea" id="fu-${q.id}" rows="2" placeholder="Your reason (optional, min 20 characters)..."
+          oninput="empFollowups[${q.id}]=this.value;updateFollowupCounter(${q.id},this.value)"></textarea>
+        <div class="char-counter below" id="fucc-${q.id}">0 / 20 minimum characters</div>
+      </div>`;
+    }
+    return `<div class="question-card" id="qc-${q.id}">
+      <div class="q-header"><div class="q-num" id="qnum-${q.id}">${i+1}</div><div class="q-text">${q.text}${reqMark}</div></div>
+      ${input}
+    </div>`;
+  }).join('');
+}
+
+function pickRating(clickedBtn, qid, val) {
+  // Use clicked button's parent to find siblings - no getElementById needed
+  const wrap = clickedBtn.parentElement;
+  if (wrap) {
+    wrap.querySelectorAll('.rating-btn').forEach(function(b) {
+      b.style.background  = '#ffffff';
+      b.style.borderColor = '#e2e8f0';
+      b.style.color       = '#4a5568';
+      const rn = b.querySelector('.r-num');
+      const rl = b.querySelector('.r-lbl');
+      if (rn) rn.style.color = '#4a5568';
+      if (rl) rl.style.color = '#8a9bb0';
+    });
+    clickedBtn.style.background  = 'rgba(0,201,167,0.1)';
+    clickedBtn.style.borderColor = '#00c9a7';
+    clickedBtn.style.color       = '#00a88c';
+    const rn = clickedBtn.querySelector('.r-num');
+    const rl = clickedBtn.querySelector('.r-lbl');
+    if (rn) rn.style.color = '#00a88c';
+    if (rl) rl.style.color = '#00a88c';
+  }
+  // Store answer + check trigger directly
+  empAnswers[qid] = String(val);
+  const card2 = document.getElementById('qc-'+qid);
+  if (card2) {
+    card2.classList.add('answered');
+    card2.classList.remove('required-error');
+    card2.style.removeProperty('border-color');
+    card2.style.removeProperty('background-color');
+    const errMsg2 = card2.querySelector('.q-required-msg');
+    if (errMsg2) errMsg2.remove();
+  }
+  const num2 = document.getElementById('qnum-'+qid);
+  if (num2) num2.style.background = '#00c9a7';
+  checkFollowupTrigger(qid, val, 'rating');
+}
+
+function pickAnswer(qid, val, type) {
+  empAnswers[qid] = String(val);
+  // Clear required error state completely
+  const card = document.getElementById('qc-'+qid);
+  if (card) {
+    card.classList.add('answered');
+    card.classList.remove('required-error');
+    card.style.removeProperty('border-color');
+    card.style.removeProperty('background-color');
+    const errMsg = card.querySelector('.q-required-msg');
+    if (errMsg) errMsg.remove();
+  }
+  const num = document.getElementById('qnum-'+qid);
+  if (num) num.style.background = val && val.trim() ? 'var(--teal)' : 'var(--navy)';
+  if (type === 'mcq') {
+    document.querySelectorAll(`[id^="mo-${qid}-"]`).forEach(b => b.classList.remove('selected'));
+    document.querySelectorAll(`[id^="mo-${qid}-"]`).forEach(b => { if (b.dataset.val === String(val)) b.classList.add('selected'); });
+    checkFollowupTrigger(qid, val, type);
+  }
+}
+
+async function submitFeedback() {
+  const name    = document.getElementById('emp-name')?.value?.trim();
+  const dept    = document.getElementById('emp-dept')?.value;
+  const alertEl = document.getElementById('emp-alert');
+  const alertTx = document.getElementById('emp-alert-text');
+  const btn     = document.getElementById('submit-btn');
+  if (!name || !dept) {
+    alertTx.textContent = 'Please enter your name and select your department.';
+    alertEl.classList.add('show'); return;
+  }
+  // Only check required questions that are visible to this dept
+  const dept2 = document.getElementById('emp-dept')?.value || '';
+  const visibleQs2 = app.questions.filter(q => !q.depts || q.depts.length === 0 || q.depts.includes(dept2));
+  const unanswered = visibleQs2.filter(q => q.required && (empAnswers[q.id] === undefined || empAnswers[q.id] === ''));
+  // Also check minChars for text questions
+  const underMin = visibleQs2.filter(q => {
+    if (q.type !== 'text') return false;
+    const minC = parseInt(q.minChars) || 30;
+    const val  = empAnswers[q.id] || '';
+    return minC > 0 && val.length < minC;
+  });
+  if (unanswered.length || underMin.length) {
+    // Highlight each unanswered required question
+    unanswered.forEach(q => {
+      const card = document.getElementById('qc-'+q.id);
+      if (card) {
+        card.classList.add('required-error');
+        if (!card.querySelector('.q-required-msg')) {
+          const msg = document.createElement('div');
+          msg.className = 'q-required-msg';
+          msg.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> This question is required';
+          card.appendChild(msg);
+        }
+      }
+    });
+    underMin.forEach(q => {
+      const card = document.getElementById('qc-'+q.id);
+      if (card && !unanswered.find(x=>x.id===q.id)) {
+        card.classList.add('required-error');
+        if (!card.querySelector('.q-required-msg')) {
+          const minC = parseInt(q.minChars)||30;
+          const cur  = (empAnswers[q.id]||'').length;
+          const msg  = document.createElement('div');
+          msg.className = 'q-required-msg';
+          msg.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Minimum ${minC} characters required (${cur} entered)`;
+          card.appendChild(msg);
+        }
+      }
+    });
+    // Scroll to first error
+    const firstErr = document.querySelector('.required-error');
+    if (firstErr) firstErr.scrollIntoView({behavior:'smooth', block:'center'});
+    alertTx.textContent = `Please complete all required fields. ${unanswered.length + underMin.length} issue(s) found.`;
+    alertEl.classList.add('show'); return;
+  }
+  // Guard: ensure there's an active session for this dept
+  const sessCheck = getActiveSessionForDept(dept);
+  if (!sessCheck) {
+    alertTx.textContent = 'No active session found for your department. Please contact your Admin.';
+    alertEl.classList.add('show'); return;
+  }
+  alertEl.classList.remove('show');
+  btn.disabled = true;
+  btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><polyline points="20 6 9 17 4 12"/></svg> Saving…`;
+
+  const now  = new Date();
+  const tsRaw = now.toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'long',year:'numeric'});
+  const tsTime = now.toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',hour12:true}).toUpperCase();
+  const ts = tsRaw.replace(',','') + ', ' + tsTime;
+  const timeTaken = formStartTime ? Math.round((Date.now() - formStartTime)/1000) : 0;
+  const ttMin = Math.floor(timeTaken/60), ttSec = timeTaken%60;
+  const timeTakenStr = timeTaken < 60 ? `${timeTaken}s` : `${ttMin}m ${ttSec}s`;
+  const sess = getActiveSessionForDept(dept);
+  const dept3 = dept;
+  const visQs  = app.questions.filter(q => !q.depts || q.depts.length===0 || q.depts.includes(dept3));
+  const answered = visQs.filter(q => empAnswers[q.id] !== undefined && empAnswers[q.id] !== '').length;
+  const completion = visQs.length > 0 ? Math.round(answered / visQs.length * 100) : 100;
+  const r    = { id:Date.now(), name, dept, session:sess?.id||app.activeSession, ts, answers:{...empAnswers}, followups:{...empFollowups}, timeTaken:timeTakenStr, completion };
+  // Duplicate check
+  const isDup = app.responses.some(x => x.session===(sess?.id||app.activeSession) && x.name.toLowerCase()===name.toLowerCase() && x.dept===dept);
+  if (isDup) {
+    btn.disabled = false;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Submit Feedback`;
+    document.getElementById('emp-body').innerHTML = `
+      <div class="dup-screen">
+        <div class="dup-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+        <h2>Already Submitted!</h2>
+        <p>You (${name} - ${dept}) have already submitted feedback for this session.<br>Each person can submit only once per session.</p>
+        <div class="dup-btns">
+          <button class="btn-ghost" onclick="resetEmpForm()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>Go Back
+          </button>
+          <button class="submit-btn" style="width:auto;padding:11px 22px;font-size:14px" onclick="forceSubmit()">
+            Submit Anyway
+          </button>
+        </div>
+      </div>`;
+    // Store pending response for force submit
+    window._pendingResponse = r;
+    return;
+  }
+
+  app.responses.push(r);
+
+  const visibleQs3 = app.questions.filter(q => !q.depts || q.depts.length === 0 || q.depts.includes(dept));
+  const synced = await syncToSheets({
+    ts, session: sess?.name || app.activeSession, name, dept,
+    answers:    {...empAnswers},
+    followups:  {...empFollowups},
+    qIds:       visibleQs3.map(q=>q.id),
+    qTexts:     visibleQs3.map(q=>q.text),
+    timeTaken:  timeTakenStr,
+    completion: completion
+  });
+
+  if (!synced && app.sheetsUrl) {
+    showToast("Could not sync to sheet - saved locally", "warning");
+  }
+  document.getElementById('emp-body').innerHTML = `
+    <div class="success-screen">
+      <div class="success-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>Thank you, ${name}!</h2>
+      <p>Your feedback has been recorded successfully.<br>Your response helps us improve future sessions.</p>
+      <div class="sync-badge ${synced ? 'ok' : (app.sheetsUrl ? 'fail' : 'ok')}">
+        ${synced ? '✓ Saved to Google Sheet' : (app.sheetsUrl ? '⚠ Saved locally - check Sheets setup' : '✓ Feedback recorded')}
+      </div><br>
+      <button class="btn-ghost" onclick="resetEmpForm()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>Submit Another Response
+      </button>
+    </div>`;
+}
+
+function resetEmpForm() {
+  document.getElementById('emp-body').innerHTML = `
+    <div class="form-card">
+      <div class="form-card-title"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Your Details</div>
+      <div class="field-row">
+        <div class="field-group"><label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Full Name <span class="req">*</span></label><input type="text" class="field-input" id="emp-name" placeholder="Enter your full name"></div>
+        <div class="field-group"><label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:7px">Department <span class="req">*</span></label><select class="field-input" id="emp-dept" onchange="renderEmpQuestions()"><option value="">- Select your department -</option>${DEPARTMENTS.map(d=>`<option>${d}</option>`).join('')}</select></div>
+      </div>
+    </div>
+    <div id="questions-container"></div>
+    <div class="alert-msg error" id="emp-alert"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg><span id="emp-alert-text"></span></div>
+    <button class="submit-btn" id="submit-btn" onclick="submitFeedback()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Submit Feedback</button>`;
+  empAnswers   = {};
+  empFollowups = {};
+  formStartTime = Date.now();
+  renderEmpQuestions();
+}
+
+// ─────────────────────────────────────────────
+//  JSONP - works cross-origin from local HTML
+// ─────────────────────────────────────────────
+function jsonpCall(params) {
+  return new Promise(resolve => {
+    if (!app.sheetsUrl) { resolve(null); return; }
+    const cbName = '_jsonp_' + Date.now();
+    let done = false;
+    const timer = setTimeout(() => { if(done)return; done=true; cleanup(); resolve(null); }, 12000);
+    window[cbName] = function(data) { if(done)return; done=true; clearTimeout(timer); cleanup(); resolve(data); };
+    function cleanup() {
+      try { delete window[cbName]; } catch(e) {}
+      const s = document.getElementById('_jsonp_s_' + cbName);
+      if(s) s.parentNode?.removeChild(s);
+    }
+    params.callback = cbName;
+    const base   = app.sheetsUrl.replace(/[?&]+$/, '');
+    const script = document.createElement('script');
+    const scriptId = '_jsonp_s_' + cbName;
+    script.id  = scriptId;
+    script.src = base + '?' + new URLSearchParams(params).toString();
+    script.onerror = () => { if(done)return; done=true; clearTimeout(timer); cleanup(); resolve(null); };
+    document.head.appendChild(script);
+  });
+}
+
+function forceSubmit() {
+  if (!window._pendingResponse) return;
+  const r    = window._pendingResponse;
+  window._pendingResponse = null;
+  app.responses.push(r);
+  const sess = getActiveSessionForDept(r.dept);
+  const visQs = app.questions.filter(q => !q.depts || q.depts.length===0 || q.depts.includes(r.dept));
+  syncToSheets({
+    ts:r.ts, session:sess?.name||r.session, name:r.name, dept:r.dept,
+    answers:r.answers, timeTaken:r.timeTaken, completion:r.completion,
+    qIds:visQs.map(q=>q.id), qTexts:visQs.map(q=>q.text)
+  });
+  document.getElementById('emp-body').innerHTML = `
+    <div class="success-screen">
+      <div class="success-circle"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+      <h2>Thank you, ${r.name}!</h2>
+      <p>Your feedback has been recorded successfully.</p>
+      <div class="sync-badge ok">✓ Feedback recorded</div><br>
+      <button class="btn-ghost" onclick="resetEmpForm()">Submit Another Response</button>
+    </div>`;
+}
+
+let _syncFailCount = 0;
+async function syncToSheets(payload) {
+  const data = await jsonpCall({
+    action:    'saveResponse',
+    ts:        payload.ts,
+    session:   payload.session,
+    name:      payload.name,
+    dept:      payload.dept,
+    answers:   JSON.stringify(payload.answers),
+    followups: JSON.stringify(payload.followups||{}),
+    qIds:      JSON.stringify(payload.qIds),
+    qTexts:    JSON.stringify(payload.qTexts),
+    timeTaken: payload.timeTaken || '',
+    completion:payload.completion !== undefined ? payload.completion : ''
+  });
+  const ok = data && data.status === 'ok';
+  if (!ok) {
+    _syncFailCount++;
+    if (_syncFailCount >= 2) showDisconnectBanner();
+  } else {
+    _syncFailCount = 0;
+    hideDisconnectBanner();
+  }
+  return ok;
+}
+function showDisconnectBanner() {
+  const b = document.getElementById('disconnect-banner');
+  if (b) b.style.display = 'flex';
+}
+function hideDisconnectBanner() {
+  const b = document.getElementById('disconnect-banner');
+  if (b) b.style.display = 'none';
+}
+
+// ─────────────────────────────────────────────
+//  LOAD RESPONSES FROM GOOGLE SHEET
+// ─────────────────────────────────────────────
+async function loadResponsesFromSheet() {
+  if (!app.sheetsUrl) return;
+  const btn = document.getElementById('load-btn');
+  if(btn) { btn.disabled=true; btn.textContent='Loading…'; }
+  const data = await jsonpCall({ action: 'loadResponses' });
+  if(btn) { btn.disabled=false; btn.textContent='↻ Refresh from Sheet'; }
+  if (!data || !data.rows || !data.rows.length) return;
+
+  // Parse rows back into app.responses format
+  const parsed = [];
+  data.rows.forEach((row, idx) => {
+    const rawTs = row['Timestamp'] || '';
+    // Convert ISO format (2026-05-11T13:15:00.000Z) to readable format
+    let ts = rawTs;
+    if (rawTs && rawTs.includes('T')) {
+      try {
+        const d = new Date(rawTs);
+        const dateStr = d.toLocaleDateString('en-IN',{timeZone:'Asia/Kolkata',day:'2-digit',month:'long',year:'numeric'}).replace(',','');
+        const timeStr = d.toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',hour12:true}).toUpperCase();
+        ts = dateStr + ', ' + timeStr;
+      } catch(e) { ts = rawTs; }
+    }
+    const session = row['Session']   || '';
+    const name    = row['Name']      || '';
+    const dept    = row['Department']|| '';
+    if (!name) return;
+
+    // find matching session id
+    const sessObj = app.sessions.find(s=>s.name===session) || app.sessions[0];
+
+    // build answers map by matching question text to column header
+    const answers = {};
+    app.questions.forEach((q, qi) => {
+      const colKey = `Q${qi+1}: ${q.text}`;
+      if (row[colKey] !== undefined && row[colKey] !== '') {
+        answers[q.id] = String(row[colKey]);
+      }
+    });
+
+    // build followups map
+    const followups = {};
+    app.questions.forEach((q, qi) => {
+      const fuKey = `Q${qi+1} Follow-up`;
+      if (row[fuKey] !== undefined && row[fuKey] !== '') {
+        followups[q.id] = String(row[fuKey]);
+      }
+    });
+
+    parsed.push({
+      id:         'sheet_' + idx,
+      name, dept, ts,
+      session:    sessObj?.id || app.activeSession,
+      answers,
+      followups,
+      timeTaken:  row['Time Taken'] || row['TimeTaken'] || '',
+      completion: row['Completion'] ? parseInt(row['Completion']) : undefined
+    });
+  });
+
+  // Merge - avoid duplicates by ts+name combo
+  const existing = new Set(app.responses.map(r=>r.name+'|'+r.ts));
+  let added = 0;
+  parsed.forEach(r => {
+    if (!existing.has(r.name+'|'+r.ts)) { app.responses.push(r); added++; }
+  });
+
+  // Re-render current tab
+  renderDashboard();
+  if(added > 0 && btn) {
+    const msg = document.getElementById('load-msg');
+    if(msg) { msg.textContent = `✓ Loaded ${added} new response(s) from sheet`; setTimeout(()=>msg.textContent='', 4000); }
+  }
+}
+
+// ─────────────────────────────────────────────
+//  MANAGER AUTH
+// ─────────────────────────────────────────────
+function showLogin() {
+  document.getElementById('mgr-login').style.display = 'flex';
+  document.getElementById('mgr-dashboard').style.display = 'none';
+}
+async function doLogin() {
+  const entered = document.getElementById('mgr-pass').value;
+  const hashed  = await hashPassword(entered);
+  if (hashed === PASS_HASH || hashed === SUPER_PASS_HASH) {
+    app.loggedIn     = true;
+    app.isSuperAdmin = (hashed === SUPER_PASS_HASH);
+    document.getElementById('mgr-login').style.display = 'none';
+    document.getElementById('mgr-dashboard').style.display = 'flex';
+    document.getElementById('mgr-dashboard').style.width = '100%';
+    const userInfo = document.querySelector('.sidebar-user-info p');
+    const userRole = document.querySelector('.sidebar-user-info span');
+    const avatar   = document.querySelector('.sidebar-avatar');
+    if(userInfo) userInfo.textContent = app.isSuperAdmin ? 'Super Admin' : 'Admin';
+    if(userRole) userRole.textContent = app.isSuperAdmin ? 'Super Administrator' : 'Administrator';
+    if(avatar)   avatar.textContent   = app.isSuperAdmin ? 'SA' : 'A';
+    const sheetsLink = document.getElementById('sl-sheets');
+    if(sheetsLink) sheetsLink.style.display = app.isSuperAdmin ? 'flex' : 'none';
+    showLoading();
+    Promise.all([
+      loadQuestionsFromSheet(),
+      loadResponsesFromSheet(),
+      loadSessionsFromSheet()
+    ]).then(()=>{
+      renderDashboard();
+      showToast("Dashboard loaded successfully", "success");
+      startAutoRefresh();
+    });
+  } else {
+    document.getElementById('login-error').classList.add('show');
+  }
+}
+function doLogout() {
+  app.loggedIn     = false;
+  app.isSuperAdmin = false;
+  stopAutoRefresh();
+  document.getElementById('mgr-pass').value = '';
+  document.getElementById('login-error').classList.remove('show');
+  showLogin();
+}
+function renderDashboard() { showTab(app.activeTab); }
+
+function showTab(tab) {
+  app.activeTab = tab;
+  document.querySelectorAll('.mgr-subtab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+  document.getElementById('tab-'+tab)?.classList.add('active');
+  document.getElementById('sl-'+tab)?.classList.add('active');
+  ({overview:renderOverview, questions:renderQuestionsTab, responses:renderResponsesTab,
+    analytics:renderAnalyticsTab, sessions:renderSessionsTab, sheets:renderSheetsTab})[tab]?.();
+}
+
+// ─────────────────────────────────────────────
+//  OVERVIEW
+// ─────────────────────────────────────────────
+function renderOverview() {
+  // Show overview across all sessions (not just one active)
+  const el = document.getElementById('ov-session-name');
+  const activeSessions = app.sessions.filter(s=>s.active);
+  if(el) el.textContent = activeSessions.length===1 ? activeSessions[0].name : activeSessions.length+' active sessions';
+  const res = app.responses;
+  const depts = [...new Set(res.map(r=>r.dept))].length;
+  const activeCnt = app.sessions.filter(s=>s.active).length;
+  document.getElementById('stats-row').innerHTML = `
+    <div class="stat-box"><div class="stat-label">Total Responses</div><div class="stat-value">${res.length}</div></div>
+    <div class="stat-box coral"><div class="stat-label">Departments</div><div class="stat-value">${depts}</div></div>
+    <div class="stat-box amber"><div class="stat-label">Questions</div><div class="stat-value">${app.questions.length}</div></div>
+    <div class="stat-box navy"><div class="stat-label">Active Sessions</div><div class="stat-value">${activeCnt}</div></div>`;
+  // Department response count grid
+  const deptGrid = document.getElementById('dept-response-grid');
+  if (deptGrid) {
+    const deptCounts = {};
+    DEPARTMENTS.forEach(d => deptCounts[d] = 0);
+    res.forEach(r => { if(deptCounts[r.dept]!==undefined) deptCounts[r.dept]++; });
+    const maxCount = Math.max(...Object.values(deptCounts), 1);
+    deptGrid.innerHTML = DEPARTMENTS.map(d => {
+      const cnt   = deptCounts[d] || 0;
+      const pct   = Math.round(cnt/maxCount*100);
+      const color = cnt===0 ? 'var(--border)' : cnt===maxCount ? 'var(--teal)' : 'var(--teal2)';
+      return `<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 14px;display:flex;align-items:center;gap:10px">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12.5px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:5px">${d}</div>
+          <div style="height:5px;background:var(--off);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${color};border-radius:3px;transition:width .5s"></div>
+          </div>
+        </div>
+        <div style="font-size:16px;font-weight:600;color:${cnt===0?'var(--muted)':'var(--text)'};flex-shrink:0">${cnt}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // Update responded count
+  const respondedDepts = [...new Set(res.map(r=>r.dept))].length;
+  const deptCountEl = document.getElementById('dept-responded-count');
+  if(deptCountEl) deptCountEl.textContent = `${respondedDepts} of ${DEPARTMENTS.length} departments responded`;
+
+  const recent = [...res].reverse().slice(0,5); // res is now all responses
+  const tbl = document.getElementById('recent-responses-table');
+  if (!recent.length) {
+    tbl.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><p>No responses yet. Share the Team Member tab with your team.</p></div>`;
+    return;
+  }
+  tbl.innerHTML = `<table><thead><tr><th>Name</th><th>Department</th><th>Submitted</th><th>Answers</th></tr></thead><tbody>
+    ${recent.map(r=>`<tr>
+      <td style="font-weight:500;color:var(--text)">${r.name}</td>
+      <td><span class="dept-chip">${r.dept}</span></td>
+      <td style="font-size:12.5px;color:var(--muted)">${r.ts}</td>
+      <td>${app.questions.slice(0,3).map((q,i)=>`<span class="ans-pill">Q${i+1} <b>${r.answers[q.id]||'-'}</b></span>`).join('')}</td>
+    </tr>`).join('')}</tbody></table>`;
+}
+
+// ─────────────────────────────────────────────
+//  QUESTIONS
+// ─────────────────────────────────────────────
+function renderQuestionsTab() {
+  const qc = document.getElementById('q-count');
+  if(qc) qc.textContent = app.questions.length;
+  // Update hidden toggle button visibility
+  const btn = document.getElementById('show-hidden-btn');
+  if (btn) btn.style.display = _hiddenQuestions.length > 0 ? 'flex' : 'none';
+  const body = document.getElementById('q-list-body');
+  if (!app.questions.length && !(_showHidden && _hiddenQuestions.length)) {
+    body.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><p>No questions yet. Click Add Question.</p></div>`;
+    return;
+  }
+  // Build display list: active questions + hidden ones if toggle is on
+  const displayQs = _showHidden
+    ? [...app.questions, ..._hiddenQuestions]
+    : app.questions;
+  body.innerHTML = displayQs.map((q,i)=>{
+    const typeLabel = q.type==='rating'?'Rating 1–5':q.type==='yesno'?'Yes/No/Maybe':q.type==='text'?'Text Field':'MCQ: '+q.options.join(', ');
+    const deptLabel = (!q.depts||q.depts.length===0) ? 'All departments' : q.depts.join(', ');
+    const isHidden  = q.status === 'hidden';
+    const reqBadge  = isHidden
+      ? '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(138,155,176,0.12);color:var(--muted);font-weight:500;margin-left:6px">🚫 Hidden</span>'
+      : q.required!==false
+        ? '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:rgba(255,107,107,0.1);color:var(--coral);font-weight:600;margin-left:6px">★ Compulsory</span>'
+        : '<span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--off);color:var(--muted);font-weight:500;margin-left:6px">Optional</span>';
+    const activeIdx = app.questions.indexOf(q);
+    const dragIdx   = isHidden ? -1 : activeIdx;
+    return `<div class="q-list-item" style="${isHidden?'opacity:0.55;background:var(--off)':''}"
+      ${!isHidden?`draggable="true" data-qid="${q.id}" data-idx="${activeIdx}" ondragstart="onDragStart(event,${activeIdx})" ondragover="onDragOver(event)" ondrop="onDrop(event,${activeIdx})" ondragend="onDragEnd(event)" ondragleave="onDragLeave(event)"`:''}
+    >
+      <div class="drag-handle" style="${isHidden?'opacity:0.3;cursor:default':''}" title="${isHidden?'Hidden question':'Drag to reorder'}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="5" x2="9" y2="19"/><line x1="15" y1="5" x2="15" y2="19"/></svg>
+      </div>
+      <div class="q-idx" style="${isHidden?'background:var(--muted)':''}">${isHidden?'-':i+1}</div>
+      <div class="q-list-text">
+        <p style="display:flex;align-items:center;flex-wrap:wrap;gap:4px">${q.text}${reqBadge}</p>
+        <span>${typeLabel} &nbsp;·&nbsp; 🏢 ${deptLabel}</span>
+      </div>
+      <span class="tag ${q.type==='rating'?'tag-amber':q.type==='yesno'?'tag-teal':q.type==='text'?'tag-navy':'tag-navy'}">${q.type==='rating'?'Rating':q.type==='yesno'?'Yes/No':q.type==='text'?'Text':'MCQ'}</span>
+      ${isHidden
+        ? `<button class="btn-outline" style="padding:5px 11px;font-size:12px;border-color:var(--teal);color:var(--teal2)" onclick="restoreQuestion(${q.id})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.51"/></svg>
+            Restore
+           </button>`
+        : `<button class="btn-outline" style="padding:5px 11px;font-size:12px;margin-right:4px" onclick="openEditModal(${q.id})">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Edit
+           </button>
+           <button class="btn-danger-sm" onclick="deleteQ(${q.id})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>`
+      }
+    </div>`;
+  }).join('');
+}
+function toggleOptions() {
+  const t = document.getElementById('nq-type').value;
+  document.getElementById('options-section').style.display     = t==='mcq' ? 'block' : 'none';
+  document.getElementById('nq-minchars-section').style.display = t==='text' ? 'block' : 'none';
+  document.getElementById('nq-trigger-section').style.display  = t==='text' ? 'none' : 'block';
+  updateTriggerList();
+}
+function updateTriggerList() {
+  const t    = document.getElementById('nq-type').value;
+  const list = document.getElementById('nq-trigger-list');
+  if (!list) return;
+  // Save currently checked triggers
+  const checked = new Set(Array.from(list.querySelectorAll('input[type=checkbox]:checked')).map(c=>c.dataset.trigger));
+  let opts = [];
+  if (t==='mcq') opts = Array.from(document.querySelectorAll('#options-list input')).map(i=>i.value.trim()).filter(Boolean);
+  else if (t==='yesno') opts = ['Yes','No','Maybe'];
+  else if (t==='rating') opts = ['1','2','3','4','5'];
+  if (!opts.length) {
+    list.innerHTML = '<span style="font-size:12px;color:var(--muted);padding:4px">Add options above to set triggers</span>';
+    return;
+  }
+  list.innerHTML = opts.map(o=>{
+    const isChecked = checked.has(o) ? 'checked' : '';
+    return `<label style="display:flex;align-items:center;gap:6px;padding:5px 12px;background:var(--white);border:1.5px solid var(--border);border-radius:20px;font-size:13px;cursor:pointer;user-select:none">
+      <input type="checkbox" data-trigger="${o}" ${isChecked} style="accent-color:#00c9a7;width:14px;height:14px;cursor:pointer"> ${o}
+    </label>`;
+  }).join('');
+}
+function addOpt() {
+  const l=document.getElementById('options-list'), n=l.children.length+1;
+  const d=document.createElement('div'); d.className='option-input-row';
+  d.innerHTML=`<input type="text" class="field-input" placeholder="Option ${n}" oninput="updateTriggerList()"><button class="btn-danger-sm" onclick="removeOpt(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+  l.appendChild(d);
+  updateTriggerList();
+}
+function removeOpt(btn) { btn.closest('.option-input-row').remove(); updateTriggerList(); }
+let _nqRequired = true;
+function setRequired(val) {
+  _nqRequired = val;
+  document.getElementById('req-yes').style.background = val ? 'var(--navy)' : 'transparent';
+  document.getElementById('req-yes').style.color      = val ? '#fff' : 'var(--text2)';
+  document.getElementById('req-no').style.background  = !val ? 'var(--navy)' : 'transparent';
+  document.getElementById('req-no').style.color       = !val ? '#fff' : 'var(--text2)';
+}
+function initAddForm() {
+  // Reset trigger + minChars sections
+  const tl = document.getElementById('nq-trigger-list');
+  if (tl) tl.innerHTML = '';
+  const ms = document.getElementById('nq-minchars-section');
+  if (ms) ms.style.display = 'none';
+  const mc = document.getElementById('nq-minchars');
+  if (mc) mc.value = 30;
+  // Show trigger section for default MCQ type
+  const ts = document.getElementById('nq-trigger-section');
+  if (ts) ts.style.display = 'block';
+  // Populate trigger list based on current type
+  setTimeout(updateTriggerList, 50);
+  // Populate dept tag checkboxes
+  const wrap = document.getElementById('dept-tags-wrap');
+  if (!wrap || wrap.children.length > 0) return;
+  DEPARTMENTS.forEach(d => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.dept = d;
+    btn.textContent = d;
+    btn.style.cssText = "padding:5px 12px;border:1.5px solid var(--border);border-radius:20px;background:var(--white);color:var(--text2);font-size:12.5px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s";
+    btn.onclick = function() {
+      const on = this.style.background === 'var(--teal)' || this.style.background === 'rgb(0, 201, 167)';
+      this.style.background = on ? 'var(--white)' : 'var(--teal)';
+      this.style.color      = on ? 'var(--text2)' : '#fff';
+      this.style.borderColor= on ? 'var(--border)' : 'var(--teal)';
+    };
+    wrap.appendChild(btn);
+  });
+  setRequired(true);
+}
+function saveQuestion() {
+  const text = document.getElementById('nq-text').value.trim();
+  const type = document.getElementById('nq-type').value;
+  if (!text) { showToast('Please enter the question text.','error'); return; }
+  let options = [];
+  if (type==='mcq') {
+    options = Array.from(document.querySelectorAll('#options-list input')).map(i=>i.value.trim()).filter(Boolean);
+    if (options.length < 2) { showToast('Please add at least 2 options.','error'); return; }
+  }
+  // Collect selected departments
+  const selDepts = Array.from(document.querySelectorAll('#dept-tags-wrap button'))
+    .filter(b => b.style.background === 'var(--teal)' || b.style.background === 'rgb(0, 201, 167)')
+    .map(b => b.dataset.dept);
+  // Collect trigger options
+  const selTriggers = Array.from(document.querySelectorAll('#nq-trigger-list input[type=checkbox]:checked')).map(c=>c.dataset.trigger);
+  const minChars    = parseInt(document.getElementById('nq-minchars')?.value)||0;
+  const newQ = {id:app.nextId++, text, type, options, required:_nqRequired, depts:selDepts, status:'active', triggers:selTriggers, minChars};
+  app.questions.push(newQ);
+  document.getElementById('add-q-form').classList.remove('open');
+  document.getElementById('nq-text').value = '';
+  document.querySelectorAll('#dept-tags-wrap button').forEach(b=>{
+    b.style.background='var(--white)'; b.style.color='var(--text2)'; b.style.borderColor='var(--border)';
+  });
+  setRequired(true);
+  saveQuestionToSheet(newQ, 'save').then(()=>showToast('Question saved to sheet ✓','success'));
+  renderQuestionsTab();
+  renderEmployee();
+}
+function restoreQuestion(id) {
+  const q = _hiddenQuestions.find(x=>x.id===id);
+  if (!q) return;
+  q.status = 'active';
+  _hiddenQuestions = _hiddenQuestions.filter(x=>x.id!==id);
+  app.questions.push(q);
+  saveQuestionToSheet(q, 'save').then(()=>showToast('Question restored ✓','success'));
+  // Update hidden toggle button
+  const btn = document.getElementById('show-hidden-btn');
+  if (btn) btn.style.display = _hiddenQuestions.length > 0 ? 'flex' : 'none';
+  if (_hiddenQuestions.length === 0) _showHidden = false;
+  renderQuestionsTab();
+  renderEmployee();
+}
+
+function deleteQ(id) {
+  showConfirmModal('Delete Question','This question will be hidden from the form and marked as deleted in the sheet.','Delete','danger', () => {
+    const q = app.questions.find(x=>x.id===id);
+    if (q) {
+      q.status = 'hidden';
+      _hiddenQuestions.push(q);
+      saveQuestionToSheet(q,'delete').then(()=>showToast('Question hidden ✓','info'));
+    }
+    app.questions = app.questions.filter(x=>x.id!==id);
+    const btn = document.getElementById('show-hidden-btn');
+    if (btn) btn.style.display = 'flex';
+    renderQuestionsTab(); renderEmployee();
+  });
+}
+
+// ─────────────────────────────────────────────
+//  RESPONSES
+// ─────────────────────────────────────────────
+let currentView = 'table';
+
+function setView(v) {
+  currentView = v;
+  document.getElementById('view-btn-table').style.background  = v==='table'  ? 'var(--navy)' : 'transparent';
+  document.getElementById('view-btn-table').style.color       = v==='table'  ? '#fff' : 'var(--text2)';
+  document.getElementById('view-btn-detail').style.background = v==='detail' ? 'var(--navy)' : 'transparent';
+  document.getElementById('view-btn-detail').style.color      = v==='detail' ? '#fff' : 'var(--text2)';
+  renderResponsesTable();
+}
+
+function renderResponsesTab() {
+  const fS=document.getElementById('f-session'), fD=document.getElementById('f-dept');
+  if(fS) fS.innerHTML = '<option value="">All sessions</option>'+app.sessions.map(s=>`<option value="${s.id}">${s.name}</option>`).join('');
+  if(fD) fD.innerHTML = '<option value="">All departments</option>'+DEPARTMENTS.map(d=>`<option>${d}</option>`).join('');
+  renderResponsesTable();
+}
+
+function renderResponsesTable() {
+  const fS   = document.getElementById('f-session')?.value||'';
+  const fD   = document.getElementById('f-dept')?.value||'';
+  const fQ   = (document.getElementById('f-search')?.value||'').toLowerCase().trim();
+  let res    = app.responses;
+  if(fS) res = res.filter(r=>r.session===fS);
+  if(fD) res = res.filter(r=>r.dept===fD);
+  if(fQ) res = res.filter(r=>r.name.toLowerCase().includes(fQ)||r.dept.toLowerCase().includes(fQ));
+  const body = document.getElementById('responses-table');
+  if (!res.length) {
+    body.innerHTML=`<div class="table-card"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p>No responses yet. Click "Refresh from Sheet" to load existing data.</p></div></div>`;
+    return;
+  }
+  if (currentView === 'table') renderTableView(res, body);
+  else renderDetailView(res, body, fD);
+}
+
+function completionClass(c) { return c===100?'c100':c>=60?'cmid':'clow'; }
+function renderTableView(res, body) {
+  body.innerHTML = `<div class="table-card"><div style="overflow-x:auto"><table style="min-width:700px">
+    <thead><tr><th class="col-name">Name</th><th class="col-dept">Department</th><th class="col-ts">Submitted</th><th class="col-time">Time</th><th class="col-done">Done</th><th class="col-ans">Answers (hover for question)</th></tr></thead>
+    <tbody>${[...res].reverse().map(r=>{
+      const comp = r.completion !== undefined ? r.completion : '-';
+      const compCls = completionClass(r.completion||0);
+      return `<tr>
+        <td style="font-weight:500;color:var(--text)">${r.name}</td>
+        <td><span class="dept-chip">${r.dept}</span></td>
+        <td style="font-size:12px;color:var(--muted)">${r.ts||'-'}</td>
+        <td style="font-size:12px;color:var(--muted)">${r.timeTaken||'-'}</td>
+        <td><span class="completion-badge ${compCls}">${comp}${comp!=='-'?'%':''}</span></td>
+        <td>${app.questions.map((q,i)=>{
+          const ans = r.answers[q.id]||'-';
+          const fu  = r.followups && r.followups[q.id] ? r.followups[q.id] : '';
+          const col = r.answers[q.id]?'var(--teal2)':'var(--muted)';
+          return `<span class="ans-pill" data-tip="${q.text.replace(/"/g,'&quot;')}" onmouseenter="showTip(event,this.dataset.tip)" onmouseleave="hideTip()">Q${i+1} <b style="color:${col}">${ans}</b></span>${fu ? `<span style="font-size:11px;color:var(--text2);background:rgba(255,193,69,0.1);border:1px solid rgba(255,193,69,0.3);border-radius:10px;padding:2px 8px;margin-left:2px" title="Follow-up: ${fu.replace(/"/g,'&quot;')}">💬 ${fu.length>30?fu.substring(0,30)+'...':fu}</span>` : ''}`;
+        }).join('')}</td>
+      </tr>`;
+    }).join('')}</tbody>
+  </table></div></div>`;
+}
+
+function renderDetailView(res, body, filterDept) {
+  const grouped = {};
+  if (filterDept) {
+    grouped[filterDept] = res.filter(r=>r.dept===filterDept);
+  } else {
+    res.forEach(r=>{ if(!grouped[r.dept]) grouped[r.dept]=[]; grouped[r.dept].push(r); });
+  }
+  let html = '';
+  Object.entries(grouped).sort((a,b)=>a[0].localeCompare(b[0])).forEach(([dept, deptRes])=>{
+    html += `
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow-sm);margin-bottom:20px;overflow:hidden">
+      <div style="background:var(--navy);padding:16px 24px;display:flex;align-items:center;gap:12px">
+        <div style="width:36px;height:36px;background:rgba(0,201,167,0.2);border-radius:10px;display:flex;align-items:center;justify-content:center">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" width="18" height="18"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <div>
+          <h3 style="font-size:15px;font-weight:600;color:#fff;margin-bottom:2px">${dept}</h3>
+          <span style="font-size:12px;color:rgba(255,255,255,0.5)">${deptRes.length} response${deptRes.length!==1?'s':''}</span>
+        </div>
+      </div>
+      ${[...deptRes].reverse().map((r,ri)=>{
+        const s = app.sessions.find(x=>x.id===r.session);
+        return `
+        <div style="padding:20px 24px;${ri<deptRes.length-1?'border-bottom:1px solid var(--border)':''}">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+            <div style="width:38px;height:38px;background:rgba(0,201,167,0.1);border:1.5px solid rgba(0,201,167,0.25);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--teal2);flex-shrink:0">${r.name.charAt(0).toUpperCase()}</div>
+            <div>
+              <p style="font-size:14.5px;font-weight:600;color:var(--text)">${r.name}</p>
+              <p style="font-size:12px;color:var(--muted)">${s?.name||r.session} &nbsp;·&nbsp; ${r.ts||'-'} ${r.timeTaken?'&nbsp;·&nbsp; ⏱ '+r.timeTaken:''} ${r.completion!==undefined?'&nbsp;·&nbsp; <span style="color:var(--teal2);font-weight:600">'+r.completion+'% done</span>':''}</p>
+            </div>
+          </div>
+          <div style="display:grid;gap:10px">
+            ${app.questions.map((q,qi)=>{
+              const ans    = r.answers[q.id];
+              const hasAns = ans && ans.trim() && ans !== '-';
+              const fu = r.followups && r.followups[q.id] ? r.followups[q.id] : '';
+              return `
+              <div style="background:var(--off);border-radius:var(--radius-sm);padding:12px 16px;border-left:3px solid ${hasAns?'var(--teal)':'var(--border)'}">
+                <div style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:4px">Q${qi+1} · ${q.type==='rating'?'Rating':q.type==='yesno'?'Yes/No':q.type==='text'?'Text':'MCQ'}</div>
+                <div style="font-size:13.5px;color:var(--text2);margin-bottom:8px;line-height:1.5">${q.text}</div>
+                ${q.type==='text' && hasAns
+                  ? `<div style="padding:8px 12px;background:rgba(0,201,167,0.07);border-radius:6px;font-size:13.5px;color:var(--text);border:1px solid rgba(0,201,167,0.2);line-height:1.6">${ans}</div>`
+                  : `<div style="display:inline-flex;align-items:center;gap:6px;padding:5px 14px;border-radius:20px;font-size:13.5px;font-weight:600;background:${hasAns?'rgba(0,201,167,0.1)':'rgba(138,155,176,0.1)'};color:${hasAns?'var(--teal2)':'var(--muted)'};border:1.5px solid ${hasAns?'rgba(0,201,167,0.25)':'var(--border)'}">
+                    ${hasAns?'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13"><polyline points="20 6 9 17 4 12"/></svg>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="5" y1="12" x2="19" y2="12"/></svg>'}
+                    ${hasAns ? ans : 'Not answered'}
+                  </div>`
+                }
+                ${fu ? `<div style="margin-top:8px;padding:8px 12px;background:rgba(255,193,69,0.08);border-radius:6px;border:1px solid rgba(255,193,69,0.25);border-left:3px solid #ffc145">
+                  <div style="font-size:10.5px;font-weight:600;color:#92400e;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px">💬 Why / Follow-up</div>
+                  <div style="font-size:13px;color:var(--text);line-height:1.6">${fu}</div>
+                </div>` : ''}
+              </div>`;
+            }).join('')}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  });
+  body.innerHTML = html || `<div class="table-card"><div class="empty-state"><p>No responses for this department.</p></div></div>`;
+}
+
+function printResponses() {
+  const prev = currentView;
+  setView('detail');
+  // Set print date on body for CSS ::after
+  document.body.setAttribute('data-print-date',
+    new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'})
+  );
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      window.print();
+      setTimeout(() => { setView(prev); document.body.removeAttribute('data-print-date'); }, 200);
+    }, 300);
+  });
+}
+
+// ─────────────────────────────────────────────
+//  SAVE QUESTION TO SHEET
+// ─────────────────────────────────────────────
+async function saveQuestionToSheet(q, action='save') {
+  if (!app.sheetsUrl) return;
+  const triggers = Array.isArray(q.triggers) ? q.triggers.join(',') : (q.triggers||'');
+  await jsonpCall({
+    action:    'saveQuestion',
+    qaction:   action,
+    id:        q.id,
+    text:      q.text,
+    type:      q.type,
+    options:   (q.options||[]).join(','),
+    required:  q.required !== false ? 'true' : 'false',
+    depts:     (q.depts||[]).length > 0 ? q.depts.join(',') : 'all',
+    status:    q.status || 'active',
+    sortOrder: app.questions.indexOf(q),
+    triggers:  triggers,
+    minChars:  q.minChars || 0
+  });
+}
+
+async function syncAllQuestionsOrder() {
+  if (!app.sheetsUrl) return;
+  // Sync the full order after drag-drop reorder
+  await jsonpCall({
+    action:  'reorderQuestions',
+    ids:     JSON.stringify(app.questions.map(q=>q.id)),
+    orders:  JSON.stringify(app.questions.map((_,i)=>i))
+  });
+}
+
+// ─────────────────────────────────────────────
+//  SAVE SESSION TO SHEET
+// ─────────────────────────────────────────────
+async function saveSessionToSheet(sess) {
+  if (!app.sheetsUrl) return;
+  const selDepts = (!sess.depts||sess.depts.length===0) ? 'All departments' : sess.depts.join(', ');
+  await jsonpCall({
+    action:     'saveSession',
+    id:         sess.id,
+    name:       sess.name,
+    date:       sess.date,
+    depts:      selDepts,
+    active:     sess.active ? 'Yes' : 'No',
+    status:     sess.status || 'active',
+    closedDate: sess.closedDate || ''
+  });
+}
+
+// ─────────────────────────────────────────────
+//  LOAD QUESTIONS FROM SHEET
+// ─────────────────────────────────────────────
+async function loadQuestionsFromSheet() {
+  if (!app.sheetsUrl) return;
+  const data = await jsonpCall({ action: 'loadQuestions' });
+  if (!data || !data.questions || !data.questions.length) return;
+  const allMapped = data.questions.map(q => ({
+    id:       parseInt(q.id) || q.id,
+    text:     q.text,
+    type:     q.type,
+    options:  Array.isArray(q.options) ? q.options : (q.options ? String(q.options).split(',').map(o=>o.trim()).filter(Boolean) : []),
+    required: q.required === 'false' || q.required === false ? false : true,
+    depts:    q.depts && q.depts !== 'all' && q.depts !== '' ? String(q.depts).split(',').map(d=>d.trim()).filter(Boolean) : [],
+    status:   q.status || 'active',
+    triggers: q.triggers ? String(q.triggers).split(',').map(t=>t.trim()).filter(Boolean) : [],
+    minChars: parseInt(q.minChars) || 0
+  }));
+  // Separate active and hidden
+  app.questions   = allMapped.filter(q => q.status !== 'hidden');
+  _hiddenQuestions = allMapped.filter(q => q.status === 'hidden');
+  const allIds = allMapped.map(q=>parseInt(q.id)||0);
+  if (allIds.length > 0) app.nextId = Math.max(...allIds) + 1;
+  // Show toggle button only if there are hidden questions
+  const btn = document.getElementById('show-hidden-btn');
+  if (btn) btn.style.display = _hiddenQuestions.length > 0 ? 'flex' : 'none';
+}
+
+// ─────────────────────────────────────────────
+//  LOAD SESSIONS FROM SHEET
+// ─────────────────────────────────────────────
+async function loadSessionsFromSheet() {
+  if (!app.sheetsUrl) return;
+  const data = await jsonpCall({ action: 'loadSessions' });
+  if (!data || !data.sessions || !data.sessions.length) return;
+  // Merge sheet sessions with default ones
+  data.sessions.forEach(s => {
+    const exists = app.sessions.find(x => x.id === s.id);
+    if (!exists) {
+      app.sessions.push({
+        id:     s.id,
+        name:   s.name,
+        date:   (function(d) {
+          if (!d) return '';
+          if (String(d).includes('GMT') || String(d).includes('00:00:00')) {
+            try {
+              return new Date(d).toLocaleDateString('en-IN',{weekday:'short',day:'2-digit',month:'short',year:'numeric'});
+            } catch(e) { return String(d); }
+          }
+          return String(d);
+        })(s.date),
+        depts:  s.depts === 'All departments' ? [] : s.depts.split(',').map(d=>d.trim()).filter(Boolean),
+        active: s.active === 'Yes',
+        status: s.status || 'active',
+        closedDate: s.closedDate || ''
+      });
+    }
+  });
+}
+
+
+
+function exportCSV() {
+  const fS = document.getElementById('f-session')?.value||'';
+  const fD = document.getElementById('f-dept')?.value||'';
+  const fQ = (document.getElementById('f-search')?.value||'').toLowerCase().trim();
+  let res = app.responses;
+  if(fS) res = res.filter(r=>r.session===fS);
+  if(fD) res = res.filter(r=>r.dept===fD);
+  if(fQ) res = res.filter(r=>r.name.toLowerCase().includes(fQ)||r.dept.toLowerCase().includes(fQ));
+  if (!res.length) { showToast('No responses match current filters','warning'); return; }
+  const sessName = fS ? (app.sessions.find(s=>s.id===fS)?.name||fS) : 'All_Sessions';
+  const fileName = `Feedback_${sessName.replace(/\s+/g,'_')}_${new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}).replace(/ /g,'_')}.csv`;
+  const headers = ['Timestamp','Session','Name','Department',...app.questions.map((q,i)=>`Q${i+1}: ${q.text}`),'Time Taken','Completion %'];
+  const rows = res.map(r=>{
+    const s=app.sessions.find(x=>x.id===r.session);
+    return [r.ts,s?.name||r.session,r.name,r.dept,...app.questions.map(q=>r.answers[q.id]||''),r.timeTaken||'',r.completion!==undefined?r.completion+'%':''];
+  });
+  const csv = [headers,...rows].map(r=>r.map(v=>`"${(v||'').toString().replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download=fileName; a.click();
+  showToast(`Exported ${res.length} response${res.length!==1?'s':''} ✓`,'success');
+}
+
+// ─────────────────────────────────────────────
+//  ANALYTICS
+// ─────────────────────────────────────────────
+function renderAnalyticsTab() {
+  // Populate filter dropdowns
+  const anSess = document.getElementById('an-session');
+  const anDept = document.getElementById('an-dept');
+  if (anSess && anSess.options.length <= 1) {
+    app.sessions.forEach(s => {
+      const o = document.createElement('option'); o.value=s.id; o.textContent=s.name; anSess.appendChild(o);
+    });
+  }
+  if (anDept && anDept.options.length <= 1) {
+    DEPARTMENTS.forEach(d => {
+      const o = document.createElement('option'); o.value=d; o.textContent=d; anDept.appendChild(o);
+    });
+  }
+  const fSess = anSess?.value || '';
+  const fDept = anDept?.value || '';
+  let res = app.responses;
+  if (fSess) res = res.filter(r=>r.session===fSess);
+  if (fDept) res = res.filter(r=>r.dept===fDept);
+  const body = document.getElementById('analytics-body');
+  if (!res.length) { body.innerHTML=`<div class="table-card"><div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><p>No responses match your filters.</p></div></div>`; return; }
+  const dc={}; res.forEach(r=>{ dc[r.dept]=(dc[r.dept]||0)+1; });
+  const maxD=Math.max(...Object.values(dc));
+  let html=`<div class="table-card" style="padding:24px 28px;margin-bottom:20px;width:100%">
+    <h3 style="font-size:15px;font-weight:600;margin-bottom:18px">Responses by Department</h3>
+    ${Object.entries(dc).sort((a,b)=>b[1]-a[1]).map(([d,n])=>`
+      <div class="bar-chart-item">
+        <div class="bar-label-row"><span>${d}</span><span>${n}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round(n/maxD*100)}%"></div></div>
+      </div>`).join('')}
+  </div>`;
+  app.questions.forEach((q,qi)=>{
+    if (q.type === 'text') {
+      // For text questions show all written answers
+      const answers = res.map(r=>r.answers[q.id]).filter(a=>a&&a.trim()&&a!=='-');
+      if (!answers.length) return;
+      html+=`<div class="table-card" style="padding:24px 28px;margin-bottom:16px;width:100%">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+          <div style="width:26px;height:26px;background:var(--navy);color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">Q${qi+1}</div>
+          <h3 style="font-size:14.5px;font-weight:600">${q.text}</h3>
+        </div>
+        ${answers.map(a=>`<div style="padding:10px 14px;background:var(--off);border-radius:var(--radius-sm);margin-bottom:8px;font-size:13.5px;color:var(--text2);border-left:3px solid var(--teal);line-height:1.6">${a}</div>`).join('')}
+      </div>`;
+      return;
+    }
+    const opts = q.type==='rating'?['1','2','3','4','5']:q.type==='yesno'?['Yes','No','Maybe']:q.options;
+    const counts={}; opts.forEach(o=>counts[o]=0);
+    res.forEach(r=>{ const v=r.answers[q.id]; if(v) counts[v]=(counts[v]||0)+1; });
+    const maxV=Math.max(...Object.values(counts),1);
+    html+=`<div class="table-card" style="padding:24px 28px;margin-bottom:16px;width:100%">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+        <div style="width:26px;height:26px;background:var(--navy);color:#fff;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;flex-shrink:0">Q${qi+1}</div>
+        <h3 style="font-size:14.5px;font-weight:600">${q.text}</h3>
+      </div>
+      ${opts.map(o=>`<div class="bar-chart-item">
+        <div class="bar-label-row"><span>${o}</span><span>${counts[o]||0}</span></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.round((counts[o]||0)/maxV*100)}%"></div></div>
+      </div>`).join('')}
+    </div>`;
+  });
+  body.innerHTML = html;
+}
+
+// ─────────────────────────────────────────────
+//  SESSIONS
+// ─────────────────────────────────────────────
+function renderSessionsTab() {
+  document.getElementById('sessions-table').innerHTML = `<table>
+    <thead><tr><th>Session Name</th><th>Date</th><th>Departments</th><th>Responses</th><th>Status</th><th>Actions</th></tr></thead>
+    <tbody>${app.sessions.map(s=>{
+      const cnt    = app.responses.filter(r=>r.session===s.id).length;
+      const dLabel = (!s.depts||s.depts.length===0) ? 'All departments' : s.depts.join(', ');
+      const status = s.status === 'closed' ? 'closed' : (s.active ? 'active' : 'inactive');
+      const statusTag = status==='active'
+        ? '<span class="tag tag-teal">● Active</span>'
+        : status==='closed'
+        ? '<span class="tag" style="background:rgba(255,107,107,0.1);color:var(--coral)">🔒 Closed</span>'
+        : '<span class="tag tag-amber">○ Inactive</span>';
+      return `<tr>
+        <td style="font-weight:500;color:var(--text)">${s.name}</td>
+        <td style="color:var(--text2)">${s.date}</td>
+        <td style="font-size:12.5px;color:var(--text2);max-width:160px">${dLabel}</td>
+        <td><span class="tag tag-navy">${cnt} response${cnt!==1?'s':''}</span></td>
+        <td>${statusTag}</td>
+        <td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          ${status!=='closed'
+            ? `<button class="btn-outline" style="font-size:12px;padding:5px 10px" onclick="toggleSession('${s.id}')">${status==='active'?'Deactivate':'Activate'}</button>
+               <button class="btn-outline" style="font-size:12px;padding:5px 10px;border-color:var(--coral);color:var(--coral)" onclick="closeSession('${s.id}')">🔒 Close</button>`
+            : `<button class="btn-outline" style="font-size:12px;padding:5px 10px;border-color:var(--teal);color:var(--teal2)" onclick="reopenSession('${s.id}')">↺ Reopen</button>`
+          }
+          <button class="btn-danger-sm" onclick="deleteSession('${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+        </td>
+      </tr>`;
+    }).join('')}</tbody></table>`;
+}
+function toggleSession(id) {
+  const s = app.sessions.find(x=>x.id===id);
+  if (!s) return;
+  s.active = !s.active;
+  saveSessionToSheet(s).then(()=>showToast(`Session ${s.active?'activated':'deactivated'} ✓`,'info'));
+  renderSessionsTab();
+  renderEmployee();
+}
+function closeSession(id) {
+  const s = app.sessions.find(x=>x.id===id);
+  if (!s) return;
+  showConfirmModal(
+    'Close Session',
+    `"${s.name}" will be locked. Team Members will see a "Session Closed" message and cannot submit new responses.`,
+    'Close Session','danger',
+    () => {
+      s.status = 'closed'; s.active = false;
+      s.closedDate = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+      saveSessionToSheet(s).then(()=>showToast('Session closed ✓','info'));
+      renderSessionsTab(); renderEmployee();
+    }
+  );
+}
+function reopenSession(id) {
+  const s = app.sessions.find(x=>x.id===id);
+  if (!s) return;
+  s.status = 'active';
+  s.active = true;
+  delete s.closedDate;
+  saveSessionToSheet(s).then(()=>showToast(`Session reopened ✓`,'success'));
+  renderSessionsTab();
+  renderEmployee();
+}
+function deleteSession(id) {
+  if (app.sessions.length <= 1) { showToast('You must have at least one session.','warning'); return; }
+  showConfirmModal(
+    'Delete Session',
+    'Responses already submitted will remain in the sheet. This cannot be undone.',
+    'Delete','danger',
+    () => {
+      app.sessions = app.sessions.filter(s=>s.id!==id);
+      if (app.sheetsUrl) {
+        jsonpCall({ action:'deleteSession', id }).then(()=>showToast("Session deleted ✓","info"));
+      }
+      renderSessionsTab();
+      renderEmployee();
+    }
+  );
+}
+function setActiveSession(id) { app.activeSession=id; renderSessionsTab(); renderEmployee(); }
+let _sessActive = true;
+function setSessActive(val) {
+  _sessActive = val;
+  document.getElementById('sess-active-yes').style.background = val ? 'var(--navy)' : 'transparent';
+  document.getElementById('sess-active-yes').style.color      = val ? '#fff' : 'var(--text2)';
+  document.getElementById('sess-active-no').style.background  = !val ? 'var(--navy)' : 'transparent';
+  document.getElementById('sess-active-no').style.color       = !val ? '#fff' : 'var(--text2)';
+}
+function initSessionModal() {
+  const wrap = document.getElementById('session-dept-tags');
+  if (!wrap || wrap.children.length > 0) return;
+  DEPARTMENTS.forEach(d => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.dataset.dept = d;
+    btn.textContent = d;
+    btn.style.cssText = "padding:4px 11px;border:1.5px solid var(--border);border-radius:20px;background:var(--white);color:var(--text2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s";
+    btn.onclick = function() {
+      const on = this.getAttribute('data-sel') === '1';
+      this.setAttribute('data-sel', on ? '0' : '1');
+      this.style.background  = on ? 'var(--white)' : 'var(--teal)';
+      this.style.color       = on ? 'var(--text2)' : '#fff';
+      this.style.borderColor = on ? 'var(--border)' : 'var(--teal)';
+    };
+    wrap.appendChild(btn);
+  });
+  setSessActive(true);
+}
+function addSession() {
+  const input = document.getElementById('session-name-input');
+  const err   = document.getElementById('session-modal-error');
+  if(input) input.value = '';
+  if(err)   err.style.display = 'none';
+  initSessionModal();
+  // Reset dept tags
+  document.querySelectorAll('#session-dept-tags button').forEach(b=>{
+    b.setAttribute('data-sel','0');
+    b.style.background='var(--white)'; b.style.color='var(--text2)'; b.style.borderColor='var(--border)';
+  });
+  setSessActive(true);
+  // Pre-fill today's date
+  const dateInput = document.getElementById('session-date-input');
+  if (dateInput) {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm   = String(today.getMonth()+1).padStart(2,'0');
+    const dd   = String(today.getDate()).padStart(2,'0');
+    dateInput.value = `${yyyy}-${mm}-${dd}`;
+  }
+  document.getElementById('session-modal')?.classList.add('open');
+  setTimeout(()=>input?.focus(), 150);
+}
+function closeSessionModal() {
+  document.getElementById('session-modal')?.classList.remove('open');
+}
+function confirmSessionModal() {
+  const input = document.getElementById('session-name-input');
+  const err   = document.getElementById('session-modal-error');
+  const name  = input?.value?.trim();
+  if (!name) {
+    err.textContent = 'Please enter a session name.';
+    err.style.display = 'block';
+    input?.focus();
+    return;
+  }
+  const selDepts = Array.from(document.querySelectorAll('#session-dept-tags button'))
+    .filter(b => b.getAttribute('data-sel') === '1')
+    .map(b => b.dataset.dept);
+  const dateVal = document.getElementById('session-date-input')?.value;
+  let dateLabel = '';
+  if (dateVal) {
+    const d = new Date(dateVal + 'T00:00:00');
+    dateLabel = d.toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  } else {
+    dateLabel = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'long',year:'numeric'});
+  }
+  const id = 's'+Date.now();
+  const newSession = { id, name, date:dateLabel, depts:selDepts, active:_sessActive };
+  app.sessions.push(newSession);
+  saveSessionToSheet(newSession).then(()=>showToast("Session saved to sheet ✓", "success"));
+  closeSessionModal();
+  renderSessionsTab();
+  renderEmployee();
+}
+
+// ─────────────────────────────────────────────
+//  GOOGLE SHEETS TAB
+// ─────────────────────────────────────────────
+function renderSheetsTab() {
+  const urlEl = document.getElementById('sheets-url');
+  if (urlEl) urlEl.value = app.sheetsUrl || '';
+  if (app.sheetsUrl) {
+    document.getElementById('connected-chip').style.display = 'block';
+  }
+}
+function connectSheets() {
+  const url = document.getElementById('sheets-url')?.value?.trim();
+  const msg = document.getElementById('sheets-msg');
+  if (!url || !url.includes('script.google.com')) { msg.innerHTML='<span style="color:var(--coral)">Please enter a valid Google Apps Script URL.</span>'; return; }
+  if (!url.endsWith('/exec')) { msg.innerHTML='<span style="color:var(--coral)">URL must end in <b>/exec</b> - not /dev.</span>'; return; }
+  app.sheetsUrl = url;
+  localStorage.setItem('sheetsUrl', url);
+  document.getElementById('connected-chip').style.display = 'block';
+  msg.innerHTML = '<span style="color:#166534">✓ URL saved permanently. All data will sync to this sheet.</span>';
+  showToast("Google Sheet connected successfully!", "success");
+}
+// copyScript removed - code display not needed
+
+// ─────────────────────────────────────────────
+//  TOAST NOTIFICATIONS
+// ─────────────────────────────────────────────
+function showToast(msg, type='success', duration=3000) {
+  const icons = {
+    success: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>',
+    error:   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    info:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>',
+    warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+  };
+  const c = document.getElementById('toast-container');
+  if (!c) return;
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = (icons[type]||'') + msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.opacity='0'; t.style.transform='translateY(8px)'; t.style.transition='all .3s'; setTimeout(()=>t.remove(),300); }, duration);
+}
+function showLoading() { const b=document.getElementById('loading-bar'); if(b){b.style.display='block'; setTimeout(()=>b.style.display='none', 1500);} }
+
+// ─────────────────────────────────────────────
+//  FLOATING TOOLTIP
+// ─────────────────────────────────────────────
+function showTip(e, text) {
+  const t = document.getElementById('floating-tooltip');
+  if (!t || !text) return;
+  t.textContent = text;
+  t.style.display = 'block';
+  positionTip(e);
+}
+function positionTip(e) {
+  const t = document.getElementById('floating-tooltip');
+  if (!t) return;
+  const x = e.clientX, y = e.clientY;
+  const tw = t.offsetWidth, th = t.offsetHeight;
+  let left = x - tw/2;
+  let top  = y - th - 12;
+  // keep within viewport
+  if (left < 8) left = 8;
+  if (left + tw > window.innerWidth - 8) left = window.innerWidth - tw - 8;
+  if (top < 8) top = y + 18; // flip below if near top
+  t.style.left = left + 'px';
+  t.style.top  = top  + 'px';
+}
+function hideTip() {
+  const t = document.getElementById('floating-tooltip');
+  if (t) t.style.display = 'none';
+}
+document.addEventListener('mousemove', e => {
+  const t = document.getElementById('floating-tooltip');
+  if (t && t.style.display === 'block') positionTip(e);
+});
+
+// ─────────────────────────────────────────────
+//  HIDDEN QUESTIONS TOGGLE
+// ─────────────────────────────────────────────
+let _showHidden = false;
+let _hiddenQuestions = []; // stores hidden questions loaded from sheet
+
+function toggleShowHidden() {
+  _showHidden = !_showHidden;
+  const btn   = document.getElementById('show-hidden-btn');
+  const label = document.getElementById('show-hidden-label');
+  if (btn) {
+    btn.style.borderColor = _showHidden ? 'var(--teal)' : 'var(--border)';
+    btn.style.color       = _showHidden ? 'var(--teal2)' : 'var(--muted)';
+  }
+  if (label) label.textContent = _showHidden ? 'Hide Hidden' : 'Show Hidden';
+  renderQuestionsTab();
+}
+
+// ─────────────────────────────────────────────
+//  DRAG & DROP QUESTION REORDERING
+// ─────────────────────────────────────────────
+let _dragIdx = null;
+function onDragStart(e, idx) {
+  _dragIdx = idx;
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+}
+function onDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function onDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function onDrop(e, dropIdx) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (_dragIdx === null || _dragIdx === dropIdx) return;
+  const moved = app.questions.splice(_dragIdx, 1)[0];
+  app.questions.splice(dropIdx, 0, moved);
+  _dragIdx = null;
+  syncAllQuestionsOrder().then(()=>showToast("Question order saved ✓", "success"));
+  renderQuestionsTab();
+  renderEmployee();
+}
+function onDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.q-list-item').forEach(el => el.classList.remove('drag-over'));
+  _dragIdx = null;
+}
+
+// ─────────────────────────────────────────────
+//  EDIT QUESTION
+// ─────────────────────────────────────────────
+let _editRequired = true;
+function setEditRequired(val) {
+  _editRequired = val;
+  document.getElementById('eq-req-yes').style.background = val ? 'var(--navy)' : 'transparent';
+  document.getElementById('eq-req-yes').style.color      = val ? '#fff' : 'var(--text2)';
+  document.getElementById('eq-req-no').style.background  = !val ? 'var(--navy)' : 'transparent';
+  document.getElementById('eq-req-no').style.color       = !val ? '#fff' : 'var(--text2)';
+}
+function toggleEditOptions() {
+  const t = document.getElementById('eq-type').value;
+  document.getElementById('eq-options-section').style.display = t==='mcq' ? 'block' : 'none';
+}
+function addEditOpt(val='') {
+  const list = document.getElementById('eq-options-list');
+  const n    = list.children.length + 1;
+  const d    = document.createElement('div');
+  d.className = 'option-input-row';
+  d.innerHTML = `<input type="text" class="field-input" placeholder="Option ${n}" value="${val.replace(/"/g,'&quot;')}">
+    <button class="btn-danger-sm" onclick="this.closest('.option-input-row').remove()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>`;
+  list.appendChild(d);
+}
+function openEditModal(id) {
+  const q = app.questions.find(x=>x.id===id);
+  if (!q) return;
+  document.getElementById('eq-id').value     = id;
+  document.getElementById('eq-text').value   = q.text;
+  document.getElementById('eq-type').value   = q.type;
+  document.getElementById('eq-options-list').innerHTML = '';
+  if (q.type==='mcq') q.options.forEach(o => addEditOpt(o));
+  toggleEditOptions();
+  setEditRequired(q.required !== false);
+  document.getElementById('eq-modal-error').style.display = 'none';
+  document.getElementById('edit-q-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('eq-text')?.focus(), 150);
+}
+function closeEditModal() {
+  document.getElementById('edit-q-modal').classList.remove('open');
+}
+function saveEditQuestion() {
+  const id   = parseInt(document.getElementById('eq-id').value);
+  const text = document.getElementById('eq-text').value.trim();
+  const type = document.getElementById('eq-type').value;
+  const err  = document.getElementById('eq-modal-error');
+  if (!text) { err.textContent='Please enter the question text.'; err.style.display='block'; return; }
+  let options = [];
+  if (type==='mcq') {
+    options = Array.from(document.querySelectorAll('#eq-options-list input')).map(i=>i.value.trim()).filter(Boolean);
+    if (options.length < 2) { err.textContent='Please add at least 2 options.'; err.style.display='block'; return; }
+  }
+  const q = app.questions.find(x=>x.id===id);
+  if (q) {
+    q.text=text; q.type=type; q.options=options; q.required=_editRequired;
+    saveQuestionToSheet(q, 'save').then(()=>showToast("Question updated ✓", "success"));
+  }
+  closeEditModal();
+  renderQuestionsTab();
+  renderEmployee();
+}
+
+// ─────────────────────────────────────────────
+//  AUTO-REFRESH (every 60 seconds when logged in)
+// ─────────────────────────────────────────────
+let _autoRefreshTimer = null;
+function startAutoRefresh() {
+  stopAutoRefresh();
+  _autoRefreshTimer = setInterval(async () => {
+    if (!app.loggedIn || !app.sheetsUrl) return;
+    await Promise.all([loadResponsesFromSheet(), loadSessionsFromSheet(), loadQuestionsFromSheet()]);
+    // Silently re-render current tab
+    if (app.activeTab === 'overview')   renderOverview();
+    if (app.activeTab === 'responses')  renderResponsesTable();
+    if (app.activeTab === 'analytics')  renderAnalyticsTab();
+    if (app.activeTab === 'questions')  renderQuestionsTab();
+  }, 60000);
+}
+function stopAutoRefresh() {
+  if (_autoRefreshTimer) { clearInterval(_autoRefreshTimer); _autoRefreshTimer = null; }
+}
+
+// ─────────────────────────────────────────────
+//  THEMED CONFIRM MODAL
+// ─────────────────────────────────────────────
+let _confirmCallback = null;
+function showConfirmModal(title, msg, okLabel, okStyle, cb) {
+  document.getElementById('confirm-title').textContent = title;
+  document.getElementById('confirm-msg').textContent   = msg;
+  const btn = document.getElementById('confirm-ok-btn');
+  btn.textContent   = okLabel || 'Confirm';
+  btn.className     = okStyle === 'danger' ? 'btn-teal' : 'btn-teal';
+  btn.style.background = okStyle === 'danger' ? 'var(--coral)' : 'var(--teal)';
+  btn.style.borderColor= okStyle === 'danger' ? 'var(--coral)' : 'var(--teal)';
+  _confirmCallback  = cb;
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirmModal() {
+  document.getElementById('confirm-modal').classList.remove('open');
+  // Note: _confirmCallback cleared by executeConfirm after calling it
+  // Only clear here when user CANCELS (outside click handler also calls this)
+}
+function executeConfirm() {
+  const cb = _confirmCallback;  // save before closeConfirmModal clears it
+  closeConfirmModal();
+  if (cb) cb();
+}
+
+// ─────────────────────────────────────────────
+//  MODAL OVERLAY CLOSE ON OUTSIDE CLICK
+// ─────────────────────────────────────────────
+document.addEventListener('click', e => {
+  if (e.target.classList.contains('modal-overlay')) {
+    e.target.classList.remove('open');
+    if (e.target.id === 'confirm-modal') _confirmCallback = null; // cancelled
+  }
+});
+
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+// Load sheet URL from localStorage if Super Admin previously updated it
+(function() {
+  const saved = localStorage.getItem('sheetsUrl');
+  if (saved) app.sheetsUrl = saved;
+})();
+
+// Load questions + sessions from sheet on page open for employee form
+renderEmployee(); // render immediately with loading indicator
+if (app.sheetsUrl) {
+  // Show loading state in questions container
+  const qc = document.getElementById('questions-container');
+  if (qc) qc.innerHTML = `<div style="text-align:center;padding:32px;background:var(--white);border-radius:var(--radius);border:1px solid var(--border)">
+    <div style="width:36px;height:36px;border:3px solid var(--border);border-top-color:var(--teal);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px"></div>
+    <p style="font-size:14px;color:var(--muted)">Loading questions...</p>
+  </div>`;
+  // Add spin animation if not already present
+  if (!document.getElementById('spin-style')) {
+    const s = document.createElement('style');
+    s.id = 'spin-style';
+    s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(s);
+  }
+  // Load questions and sessions together
+  Promise.all([loadQuestionsFromSheet(), loadSessionsFromSheet()]).then(() => {
+    renderEmployee(); // re-render with real data
+  }).catch(() => {
+    // On failure, render anyway (form still usable)
+    renderEmployee();
+  });
+}
+</script>
+
+<!-- SESSION MODAL -->
+<div class="modal-overlay" id="session-modal">
+  <div class="modal-box" style="width:500px;max-width:92vw">
+    <div style="width:42px;height:42px;background:var(--navy);border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="20" height="20"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    </div>
+    <div class="modal-title">New Session</div>
+    <div class="modal-subtitle">Create a feedback session. Assign it to specific departments or leave all unselected for everyone.</div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px">Session Name <span style="color:var(--coral)">*</span></label>
+      <input type="text" class="modal-input" id="session-name-input" placeholder="e.g. Security Awareness Training" maxlength="80" onkeydown="if(event.key==='Enter')confirmSessionModal()">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px">Session Date <span style="color:var(--coral)">*</span></label>
+      <input type="date" class="modal-input" id="session-date-input">
+    </div>
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px">Departments <span style="font-weight:400;color:var(--muted)">(unselected = all departments)</span></label>
+      <div id="session-dept-tags" style="display:flex;flex-wrap:wrap;gap:7px;padding:10px;background:var(--off);border:1.5px solid var(--border);border-radius:var(--radius-sm);min-height:44px"></div>
+    </div>
+    <div style="margin-bottom:6px">
+      <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px">Status</label>
+      <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;width:fit-content">
+        <button type="button" id="sess-active-yes" onclick="setSessActive(true)" style="padding:9px 18px;border:none;background:var(--navy);color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">● Active</button>
+        <button type="button" id="sess-active-no"  onclick="setSessActive(false)" style="padding:9px 18px;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">○ Inactive</button>
+      </div>
+    </div>
+    <div id="session-modal-error" style="display:none;margin-top:8px;font-size:13px;color:var(--coral)"></div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeSessionModal()">Cancel</button>
+      <button class="btn-teal" onclick="confirmSessionModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Create Session
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT QUESTION MODAL -->
+<div class="modal-overlay" id="edit-q-modal">
+  <div class="modal-box" style="width:500px;max-width:92vw">
+    <div style="width:42px;height:42px;background:var(--navy);border-radius:11px;display:flex;align-items:center;justify-content:center;margin-bottom:16px">
+      <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" width="20" height="20"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    </div>
+    <div class="modal-title">Edit Question</div>
+    <div class="modal-subtitle">Update the question text, type, or options.</div>
+    <input type="hidden" id="eq-id">
+    <div style="margin-bottom:14px">
+      <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px">Question Text <span style="color:var(--coral)">*</span></label>
+      <input type="text" class="modal-input" id="eq-text" placeholder="Enter question text" maxlength="200">
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+      <div>
+        <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px">Question Type</label>
+        <select class="modal-input" id="eq-type" onchange="toggleEditOptions()">
+          <option value="mcq">Multiple Choice (MCQ)</option>
+          <option value="rating">Rating (1–5)</option>
+          <option value="yesno">Yes / No / Maybe</option>
+          <option value="text">Text Field</option>
+        </select>
+      </div>
+      <div>
+        <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px">Required</label>
+        <div style="display:flex;gap:0;border:1.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;height:44px">
+          <button type="button" id="eq-req-yes" onclick="setEditRequired(true)" style="flex:1;border:none;background:var(--navy);color:#fff;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">★ Must</button>
+          <button type="button" id="eq-req-no"  onclick="setEditRequired(false)" style="flex:1;border:none;background:transparent;color:var(--text2);font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif">Optional</button>
+        </div>
+      </div>
+    </div>
+    <div id="eq-options-section" style="margin-bottom:14px">
+      <label style="display:block;font-size:13px;font-weight:500;color:var(--text2);margin-bottom:6px">Answer Options</label>
+      <div id="eq-options-list"></div>
+      <button class="btn-outline" style="margin-top:8px;font-size:12.5px" onclick="addEditOpt()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="13" height="13"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Add Option
+      </button>
+    </div>
+    <div id="eq-modal-error" style="display:none;margin-top:8px;font-size:13px;color:var(--coral)"></div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-teal" onclick="saveEditQuestion()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="15" height="15"><polyline points="20 6 9 17 4 12"/></svg>
+        Save Changes
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confirm-modal">
+  <div class="modal-box" style="width:420px;max-width:92vw">
+    <div id="confirm-icon" style="width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;background:rgba(255,107,107,0.1)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--coral)" stroke-width="2" width="22" height="22"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    </div>
+    <div class="modal-title" id="confirm-title">Are you sure?</div>
+    <div class="modal-subtitle" id="confirm-msg">This action cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="btn-outline" onclick="_confirmCallback=null;closeConfirmModal()">Cancel</button>
+      <button id="confirm-ok-btn" class="btn-teal" onclick="executeConfirm()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
