@@ -1498,7 +1498,7 @@ function saveQuestion() {
   const selDepts = Array.from(document.querySelectorAll('#dept-tags-wrap button'))
     .filter(b => b.style.background === 'var(--teal)' || b.style.background === 'rgb(0, 201, 167)')
     .map(b => b.dataset.dept);
-  // Collect trigger options
+  // Collect trigger options 
   const selTriggers = Array.from(document.querySelectorAll('#nq-trigger-list input[type=checkbox]:checked')).map(c=>c.dataset.trigger);
   const minChars    = parseInt(document.getElementById('nq-minchars')?.value)||0;
   const newQ = {id:app.nextId++, text, type, options, required:_nqRequired, depts:selDepts, status:'active', triggers:selTriggers, minChars};
